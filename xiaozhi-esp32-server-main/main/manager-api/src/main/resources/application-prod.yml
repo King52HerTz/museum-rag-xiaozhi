@@ -1,0 +1,61 @@
+# 生产环境骨架配置
+# 建议通过系统环境变量、外部挂载文件或配置中心覆盖以下占位值
+
+knife4j:
+  production: true
+  enable: false
+  basic:
+    enable: false
+  setting:
+    enableFooter: false
+
+spring:
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: ${DB_URL:jdbc:mysql://prod-db-host:3306/xiaozhi_esp32_server?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&nullCatalogMeansCurrent=true}
+      username: ${DB_USERNAME:replace-with-prod-db-user}
+      password: ${DB_PASSWORD:replace-with-prod-db-password}
+      initial-size: 10
+      max-active: 100
+      min-idle: 10
+      max-wait: 6000
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      stat-view-servlet:
+        enabled: false
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          merge-sql: false
+        wall:
+          config:
+            multi-statement-allow: true
+  data:
+    redis:
+      host: ${REDIS_HOST:prod-redis-host}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:replace-with-prod-redis-password}
+      database: ${REDIS_DATABASE:0}
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+        shutdown-timeout: 100ms
+
+museum-rag:
+  base-url: ${MUSEUM_RAG_BASE_URL:https://museum-rag.example.com}
+  workbench-url: ${MUSEUM_RAG_WORKBENCH_URL:https://museum-rag.example.com}
+  username: ${MUSEUM_RAG_USERNAME:replace-with-prod-supermew-user}
+  password: ${MUSEUM_RAG_PASSWORD:replace-with-prod-supermew-password}
+  timeout: ${MUSEUM_RAG_TIMEOUT:60000}
+  bridge-secret: ${MUSEUM_RAG_BRIDGE_SECRET:replace-with-prod-bridge-secret}
+  bridge-expire-seconds: ${MUSEUM_RAG_BRIDGE_EXPIRE_SECONDS:60}

@@ -1,0 +1,66 @@
+{
+  "defaults": {
+    "museum": "湖南省博物馆",
+    "exhibition": "长沙马王堆汉墓陈列"
+  },
+  "files": {
+    "一、皿方罍——方罍之王.docx": {
+      "exhibit_id": "HNM-FL-001",
+      "era": "商代晚期",
+      "category": "青铜器"
+    },
+    "三、素纱襌衣（素纱单衣）.docx": {
+      "exhibit_id": "MWD-SSDY-001",
+      "era": "西汉",
+      "category": "服饰"
+    },
+    "二、人面纹方鼎（大禾人面纹方鼎）.docx": {
+      "exhibit_id": "HNM-RMWFD-001",
+      "era": "商代",
+      "category": "青铜器"
+    },
+    "五、辛追夫人（马王堆汉墓千年不腐女尸）.docx": {
+      "exhibit_id": "MWD-XZF-001",
+      "era": "西汉",
+      "category": "墓葬考古"
+    },
+    "四、T形帛画.docx": {
+      "exhibit_id": "MWD-THBH-001",
+      "era": "西汉",
+      "category": "帛画"
+    },
+    "文件 1：素纱襌衣（直裾）.doc": {
+      "exhibit_id": "MWD-SSDY-ZJ-001",
+      "era": "西汉",
+      "category": "服饰"
+    },
+    "文件 1：素纱襌衣（直裾）.docx": {
+      "exhibit_id": "MWD-SSDY-ZJ-001",
+      "era": "西汉",
+      "category": "服饰"
+    },
+    "文档一：辛追夫人遗体不腐原因——综合概述.docx": {
+      "era": "西汉",
+      "category": "墓葬考古"
+    },
+    "文档三：红色棺液的防腐秘密.docx": {
+      "era": "西汉",
+      "category": "文物保护"
+    },
+    "文档二：墓葬密封结构——白膏泥与木炭的防腐作用.docx": {
+      "era": "西汉",
+      "category": "墓葬考古"
+    },
+    "文档五：辛追遗体现状与现代保护.docx": {
+      "era": "现代研究",
+      "category": "文物保护"
+    },
+    "文档四：地质环境与深埋条件.docx": {
+      "era": "西汉",
+      "category": "墓葬考古"
+    },
+    "湖南省博物馆.docx": {
+      "category": "展馆概览"
+    }
+  }
+}

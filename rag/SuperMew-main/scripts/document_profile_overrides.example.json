@@ -1,0 +1,18 @@
+{
+  "defaults": {
+    "museum": "湖南省博物馆",
+    "exhibition": "长沙马王堆汉墓陈列"
+  },
+  "files": {
+    "三、素纱襌衣（素纱单衣）.docx": {
+      "exhibit_id": "MWD-003",
+      "era": "西汉",
+      "category": "服饰"
+    },
+    "二、人面纹方鼎（大禾人面纹方鼎）.docx": {
+      "exhibit_id": "HNM-002",
+      "era": "商代",
+      "category": "青铜器"
+    }
+  }
+}

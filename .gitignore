@@ -1,0 +1,129 @@
+# Root repository policy:
+# Ignore everything by default, then explicitly allow only the two codebases
+# that should be uploaded: SuperMew RAG and xiaozhi server/manager source code.
+
+/*
+
+!.gitignore
+!README.md
+
+# Keep RAG system code
+!/rag/
+/rag/*
+!/rag/SuperMew-main/
+!/rag/SuperMew-main/**
+
+# Keep xiaozhi server / manager source code
+!/xiaozhi-esp32-server-main/
+/xiaozhi-esp32-server-main/*
+!/xiaozhi-esp32-server-main/main/
+!/xiaozhi-esp32-server-main/main/README.md
+!/xiaozhi-esp32-server-main/main/README_en.md
+!/xiaozhi-esp32-server-main/main/manager-api/
+!/xiaozhi-esp32-server-main/main/manager-api/**
+!/xiaozhi-esp32-server-main/main/manager-web/
+!/xiaozhi-esp32-server-main/main/manager-web/**
+!/xiaozhi-esp32-server-main/main/xiaozhi-server/
+!/xiaozhi-esp32-server-main/main/xiaozhi-server/**
+!/xiaozhi-esp32-server-main/docker-compose*.yml
+!/xiaozhi-esp32-server-main/.gitignore
+
+# Not part of this upload scope
+/xiaozhi-esp32-server-main/main/digital-human/
+/xiaozhi-esp32-server-main/main/manager-mobile/
+
+# Explicitly ignore non-code / local-only top-level folders
+/doc/
+/rag_test/
+/scripts/
+/yingjian/
+/tmp_docx_render/
+/.agents/
+/.codex/
+/.tools/
+
+# Secrets and local runtime config
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.template
+**/application-local.yml
+**/application-dev.yml
+**/main/xiaozhi-server/config.yaml
+**/.config.yaml
+**/.secrets.yaml
+**/.private_config.yaml
+**/data/.config.yaml
+
+# Python virtual environments and caches
+**/.venv/
+**/venv/
+**/env/
+**/.agent-venv/
+**/.agent-venv-*/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.cache/
+
+# Node dependencies and build output
+**/node_modules/
+**/dist/
+**/.vite/
+**/.webpack_cache/
+**/coverage/
+
+# Java / Maven / Gradle build output
+**/target/
+**/.gradle/
+**/build/
+
+# Downloaded model files and large runtime assets
+**/models/
+**/asr-models/
+**/wakeword_runtime/models/
+**/public/generator/assets/
+**/public/generator/static/
+**/sherpa-onnx*/
+**/*SenseVoiceSmall*/
+**/*.pt
+**/*.pth
+**/*.onnx
+**/*.bin
+**/*.safetensors
+**/*.gguf
+**/*.tar
+**/*.tar.gz
+**/*.tar.bz2
+**/*.zip
+
+# User uploads, generated files, logs, databases
+**/uploadfile/
+**/uploads/
+**/tmp/
+**/logs/
+**/*.log
+**/*.pid
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+
+# Documents and test materials inside allowed code folders
+**/*.doc
+**/*.docx
+**/*.pdf
+**/*.xls
+**/*.xlsx
+**/*.ppt
+**/*.pptx
+**/presentation.html
+**/project_visualization.html
+
+# IDE / OS files
+**/.idea/
+**/.vscode/
+**/.cursor/
+**/.DS_Store
+**/Thumbs.db

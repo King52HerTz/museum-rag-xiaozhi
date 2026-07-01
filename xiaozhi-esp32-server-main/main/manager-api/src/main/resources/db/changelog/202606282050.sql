@@ -1,0 +1,7 @@
+-- 注册“博物馆知识库检索”系统插件，供智能体在管理平台中选择。
+-- provider_code 必须与 xiaozhi-server 插件函数名 search_museum_knowledge 保持一致。
+SET @data_exists = (SELECT COUNT(*) FROM ai_model_provider WHERE id = 'SYSTEM_PLUGIN_MUSEUM_KNOWLEDGE');
+SET @sql = IF(@data_exists = 0,
+    'INSERT INTO `ai_model_provider` (`id`, `model_type`, `provider_code`, `name`, `fields`, `sort`, `creator`, `create_date`, `updater`, `update_date`) VALUES (''SYSTEM_PLUGIN_MUSEUM_KNOWLEDGE'', ''Plugin'', ''search_museum_knowledge'', ''博物馆知识库检索'', JSON_ARRAY(JSON_OBJECT(''key'',''base_url'',''type'',''string'',''label'',''博物馆知识库接口地址'',''default'',''http://127.0.0.1:8000''), JSON_OBJECT(''key'',''api_key'',''type'',''string'',''label'',''接口密钥'',''default'',''museum-rag-bridge-api-dev-key''), JSON_OBJECT(''key'',''museum'',''type'',''string'',''label'',''博物馆名称'',''default'',''湖南省博物馆''), JSON_OBJECT(''key'',''exhibition'',''type'',''string'',''label'',''展览名称'',''default'',''长沙马王堆汉墓陈列''), JSON_OBJECT(''key'',''top_k'',''type'',''string'',''label'',''检索片段数'',''default'',''3''), JSON_OBJECT(''key'',''timeout'',''type'',''string'',''label'',''请求超时秒数'',''default'',''30''), JSON_OBJECT(''key'',''need_trace'',''type'',''string'',''label'',''返回检索追踪'',''default'',''true''), JSON_OBJECT(''key'',''description'',''type'',''string'',''label'',''调用说明'',''default'',''当用户询问湖南省博物馆、马王堆汉墓、辛追夫人、素纱单衣、T形帛画、皿方罍、人面纹方鼎、遗体防腐或博物馆导览问题时调用本插件。'')), 900, NULL, NOW(), NULL, NOW())',
+    'SELECT ''SYSTEM_PLUGIN_MUSEUM_KNOWLEDGE already exists, skip'' AS msg');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

@@ -1,0 +1,25 @@
+# 本地个人覆盖模板
+# 使用方式：
+# 1. 复制本文件为 data/.config.yaml
+# 2. 按你的本机环境修改 manager-api 与插件配置
+# 3. data/.config.yaml 不应提交到仓库
+
+manager-api:
+  # 若配置该地址，小智将优先从 manager-api 拉取配置
+  url: "http://127.0.0.1:8003/xiaozhi"
+  secret: "replace-with-local-manager-api-secret"
+
+server:
+  ip: "0.0.0.0"
+  port: 8000
+  http_port: 8002
+
+plugins:
+  search_museum_knowledge:
+    base_url: "http://127.0.0.1:8000"
+    api_key: "replace-with-local-bridge-api-key"
+    museum: "湖南省博物馆"
+    exhibition: "长沙马王堆汉墓陈列"
+    top_k: 3
+    timeout: 30
+    need_trace: true

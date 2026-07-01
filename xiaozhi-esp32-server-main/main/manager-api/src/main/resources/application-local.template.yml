@@ -1,0 +1,29 @@
+# 本地个人覆盖模板
+# 使用方式：
+# 1. 复制本文件为 application-local.yml
+# 2. 按你的电脑环境修改数据库、Redis 与桥接配置
+# 3. 启动时显式指定 --spring.profiles.active=local
+# 注意：application-local.yml 不应提交到仓库
+
+spring:
+  datasource:
+    druid:
+      url: jdbc:mysql://127.0.0.1:3306/xiaozhi_esp32_server?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&nullCatalogMeansCurrent=true
+      username: root
+      password: replace-with-local-db-password
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6380
+      password:
+      database: 0
+      timeout: 10000ms
+
+museum-rag:
+  base-url: http://127.0.0.1:8000
+  workbench-url: http://127.0.0.1:8000
+  username: admin
+  password: replace-with-local-supermew-password
+  timeout: 60000
+  bridge-secret: replace-with-local-bridge-secret
+  bridge-expire-seconds: 60
