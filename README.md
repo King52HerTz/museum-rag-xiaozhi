@@ -91,10 +91,22 @@ xiaozhi-server/plugins_func/functions/search_museum_knowledge.py
 8000  SuperMew RAG 工作台与后端
 8001  智博导览管理平台前端
 8003  智博导览管理平台后端
+8011  小智语音 WebSocket 服务端（接硬件阶段建议）
+8013  小智语音 HTTP/MCP 服务端（接硬件阶段建议）
 15432 SuperMew PostgreSQL
 6379  SuperMew Redis
 19530 Milvus
 ```
+
+可参考以下模板补充本地配置：
+
+```text
+xiaozhi-esp32-server-main/main/manager-api/src/main/resources/application-local.template.yml
+xiaozhi-esp32-server-main/main/xiaozhi-server/data/.config.yaml.example
+rag/SuperMew-main/.env.example
+```
+
+其中 `application-local.template.yml` 与 `.config.yaml.example` 已预留博物馆 RAG 桥接配置项，但真实密码、真实 API Key 不应提交到仓库。
 
 ## 已忽略内容
 

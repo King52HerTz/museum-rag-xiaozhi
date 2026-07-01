@@ -56,6 +56,7 @@ museum-rag:
   workbench-url: ${MUSEUM_RAG_WORKBENCH_URL:https://museum-rag.example.com}
   username: ${MUSEUM_RAG_USERNAME:replace-with-prod-supermew-user}
   password: ${MUSEUM_RAG_PASSWORD:replace-with-prod-supermew-password}
+  api-key: ${MUSEUM_RAG_API_KEY:replace-with-prod-bridge-api-key}
   timeout: ${MUSEUM_RAG_TIMEOUT:60000}
   bridge-secret: ${MUSEUM_RAG_BRIDGE_SECRET:replace-with-prod-bridge-secret}
   bridge-expire-seconds: ${MUSEUM_RAG_BRIDGE_EXPIRE_SECONDS:60}

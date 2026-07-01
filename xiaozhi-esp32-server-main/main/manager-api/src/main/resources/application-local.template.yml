@@ -24,6 +24,7 @@ museum-rag:
   workbench-url: http://127.0.0.1:8000
   username: admin
   password: replace-with-local-supermew-password
+  api-key: replace-with-local-bridge-api-key
   timeout: 60000
   bridge-secret: replace-with-local-bridge-secret
   bridge-expire-seconds: 60
