@@ -53,7 +53,8 @@ Authorization: Bearer <BRIDGE_API_KEY>
 - 管理端标题已改造为“智博导览管理平台”。
 - 新增“博物馆知识库”页面入口。
 - 后端新增 `museum/rag` 桥接 Controller / Service。
-- 管理端可跳转到 RAG 工作台进行资料上传与问答测试。
+- 管理端可跳转到 RAG 工作台进行资料上传与完整知识库管理。
+- 管理端已内置“导览问答测试”控制台，可直接调用 `manager-api /museum/rag/query`，由管理端后端桥接到 SuperMew `POST /api/museum/query`。
 
 ### 小智服务端插件
 
@@ -64,6 +65,8 @@ xiaozhi-server/plugins_func/functions/search_museum_knowledge.py
 ```
 
 该插件用于在用户询问湖南省博物馆、马王堆汉墓、辛追夫人、素纱单衣、T 形帛画等相关问题时，调用 RAG 检索接口，并把检索结果交给小智 LLM 生成自然语言导览回答。
+
+本地已验证该插件可通过 `search_museum_knowledge` 调用 SuperMew RAG，并返回 `Action.REQLLM`，即把检索片段作为上下文交给小智 LLM 继续生成语音导览回答。
 
 ### 演示智能体初始化
 
@@ -98,6 +101,14 @@ xiaozhi-server/plugins_func/functions/search_museum_knowledge.py
 19530 Milvus
 ```
 
+如果需要在 Windows 上启动本地小智语音服务端，还需要确保 Python 能加载 Opus 动态库，否则会出现：
+
+```text
+Could not find Opus library. Make sure it is installed.
+```
+
+本地联调可将 `opus.dll` 所在目录加入启动进程的 `PATH`。本机验证时使用的是 conda-forge `libopus` 包解出的 `Library/bin/opus.dll`，放在小智服务端 `tmp/opus-lib` 目录下供本地运行使用；该目录不应提交到仓库。
+
 可参考以下模板补充本地配置：
 
 ```text
@@ -125,11 +136,10 @@ rag/SuperMew-main/.env.example
 
 ## 后续开发方向
 
-1. 在管理端内进一步整合 RAG 工作台体验，减少“两个系统分开”的感觉。
-2. 完善智能体插件绑定流程，使小智设备可稳定调用 `search_museum_knowledge`。
-3. 规划小智语音服务端与 RAG 工作台的端口冲突问题。
-4. 接入硬件导览设备，完成语音提问到语音播报的闭环。
-5. 持续整理湖南省博物馆示例数据，形成稳定演示脚本。
+1. 将硬件设备从小智官方服务切换到本地小智服务端：`ws://<本机局域网 IP>:8011/xiaozhi/v1/`。
+2. 在本地管理端为真实设备绑定“湖南省博物馆导览员”智能体，验证设备私有配置能下发 `search_museum_knowledge` 插件参数。
+3. 补齐可用的 LLM API Key，完成“设备语音提问 → 小智服务端插件 → SuperMew RAG → LLM 导览话术 → 设备播报”的闭环。
+4. 持续整理湖南省博物馆示例数据，形成稳定演示脚本和答辩话术。
 
 ## 项目定位
 
