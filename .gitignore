@@ -9,6 +9,7 @@
 !STAGE_0_BASELINE.md
 !UPSTREAM_MANIFEST.yaml
 !UPSTREAM_SYNC_POLICY.md
+!UPSTREAM_DIFF_REPORT.md
 
 # Keep RAG system code
 !/rag/
