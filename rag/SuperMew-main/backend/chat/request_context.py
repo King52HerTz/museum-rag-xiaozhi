@@ -7,6 +7,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
+from backend.schemas.chat import normalize_rag_trace
+
 logger = logging.getLogger(__name__)
 
 
@@ -84,11 +86,12 @@ class ChatRequestContext:
             logger.exception("Failed to emit RAG step")
 
     def store_rag_trace(self, rag_trace: Optional[dict]) -> None:
-        if not isinstance(rag_trace, dict) or not rag_trace:
+        normalized_trace = normalize_rag_trace(rag_trace)
+        if not normalized_trace:
             return
         with self._lock:
             if self._active:
-                self._rag_trace = {"rag_trace": dict(rag_trace)}
+                self._rag_trace = {"rag_trace": normalized_trace}
 
     def take_rag_trace(self) -> Optional[dict]:
         with self._lock:
