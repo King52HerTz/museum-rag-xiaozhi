@@ -3,7 +3,8 @@ import os
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 
-from backend.tools import get_current_weather, search_knowledge_base
+from backend.chat.request_context import ChatRequestContext
+from backend.tools import get_current_weather, make_search_knowledge_base, search_knowledge_base
 
 API_KEY = os.getenv("ARK_API_KEY")
 MODEL = os.getenv("MODEL")
@@ -50,6 +51,15 @@ def create_agent_instance():
         system_prompt=SYSTEM_PROMPT,
     )
     return agent, model, fast_model
+
+
+def create_agent_for_request(ctx: ChatRequestContext):
+    """创建绑定请求上下文的 Agent，旧版全局 agent 仍保留兼容。"""
+    return create_agent(
+        model=model,
+        tools=[get_current_weather, make_search_knowledge_base(ctx)],
+        system_prompt=SYSTEM_PROMPT,
+    )
 
 
 agent, model, fast_model = create_agent_instance()

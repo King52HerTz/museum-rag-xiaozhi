@@ -3,11 +3,11 @@ import json
 
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, SystemMessage
 
-from backend.chat.runtime import agent, fast_model
+from backend.chat.request_context import ChatRequestContext
+from backend.chat.runtime import create_agent_for_request, fast_model
 from backend.chat.storage import ConversationStorage
 from backend.chat.rag_context import get_last_rag_context
-from backend.chat.streaming import set_rag_step_queue
-from backend.tools import reset_knowledge_tool_calls
+from backend.chat.streaming import use_request_context
 
 storage = ConversationStorage()
 
@@ -97,16 +97,22 @@ def chat_with_agent(
     is_first_message = len(messages) == 0
 
     get_last_rag_context(clear=True)
-    reset_knowledge_tool_calls()
+    request_context = ChatRequestContext.for_sync(
+        user_id=user_id,
+        session_id=session_id,
+    )
+    request_context.reset_knowledge_tool_budget()
 
     context_messages = _build_context_messages(messages, persistent_note, user_text)
     messages.append(HumanMessage(content=user_text))
     storage.save(user_id, session_id, messages)
 
-    result = agent.invoke(
-        {"messages": context_messages},
-        config={"recursion_limit": 8},
-    )
+    request_agent = create_agent_for_request(request_context)
+    with use_request_context(request_context):
+        result = request_agent.invoke(
+            {"messages": context_messages},
+            config={"recursion_limit": 8},
+        )
 
     response_content = ""
     if isinstance(result, dict):
@@ -124,7 +130,7 @@ def chat_with_agent(
 
     messages.append(AIMessage(content=response_content))
 
-    rag_context = get_last_rag_context(clear=True)
+    rag_context = request_context.take_rag_trace()
     rag_trace = rag_context.get("rag_trace") if rag_context else None
 
     save_meta = dict(metadata)
@@ -143,6 +149,7 @@ def chat_with_agent(
         extra_message_data=extra_message_data,
     )
 
+    request_context.close()
     return {
         "response": response_content,
         "rag_trace": rag_trace,
@@ -159,15 +166,15 @@ async def chat_with_agent_stream(
     is_first_message = len(messages) == 0
 
     get_last_rag_context(clear=True)
-    reset_knowledge_tool_calls()
 
     output_queue = asyncio.Queue()
-
-    class _RagStepProxy:
-        def put_nowait(self, step):
-            output_queue.put_nowait({"type": "rag_step", "step": step})
-
-    set_rag_step_queue(_RagStepProxy())
+    request_context = ChatRequestContext.for_stream(
+        user_id=user_id,
+        session_id=session_id,
+        output_queue=output_queue,
+    )
+    request_context.reset_knowledge_tool_budget()
+    request_agent = create_agent_for_request(request_context)
 
     context_messages = _build_context_messages(messages, persistent_note, user_text)
     messages.append(HumanMessage(content=user_text))
@@ -193,29 +200,30 @@ async def chat_with_agent_stream(
     async def _agent_worker():
         nonlocal full_response
         try:
-            async for msg, _metadata in agent.astream(
-                {"messages": context_messages},
-                stream_mode="messages",
-                config={"recursion_limit": 8},
-            ):
-                if not isinstance(msg, AIMessageChunk):
-                    continue
-                if getattr(msg, "tool_call_chunks", None):
-                    continue
+            with use_request_context(request_context):
+                async for msg, _metadata in request_agent.astream(
+                    {"messages": context_messages},
+                    stream_mode="messages",
+                    config={"recursion_limit": 8},
+                ):
+                    if not isinstance(msg, AIMessageChunk):
+                        continue
+                    if getattr(msg, "tool_call_chunks", None):
+                        continue
 
-                content = ""
-                if isinstance(msg.content, str):
-                    content = msg.content
-                elif isinstance(msg.content, list):
-                    for block in msg.content:
-                        if isinstance(block, str):
-                            content += block
-                        elif isinstance(block, dict) and block.get("type") == "text":
-                            content += block.get("text", "")
+                    content = ""
+                    if isinstance(msg.content, str):
+                        content = msg.content
+                    elif isinstance(msg.content, list):
+                        for block in msg.content:
+                            if isinstance(block, str):
+                                content += block
+                            elif isinstance(block, dict) and block.get("type") == "text":
+                                content += block.get("text", "")
 
-                if content:
-                    full_response += content
-                    await output_queue.put({"type": "content", "content": content})
+                    if content:
+                        full_response += content
+                        await output_queue.put({"type": "content", "content": content})
         except Exception as e:
             await output_queue.put({"type": "error", "content": str(e)})
         finally:
@@ -237,11 +245,11 @@ async def chat_with_agent_stream(
             pass
         raise
     finally:
-        set_rag_step_queue(None)
+        request_context.close()
         if not agent_task.done():
             agent_task.cancel()
 
-    rag_context = get_last_rag_context(clear=True)
+    rag_context = request_context.take_rag_trace()
     rag_trace = rag_context.get("rag_trace") if rag_context else None
 
     if rag_trace:

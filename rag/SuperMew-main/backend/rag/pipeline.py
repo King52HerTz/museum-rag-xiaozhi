@@ -659,8 +659,8 @@ def build_rag_graph():
 rag_graph = build_rag_graph()
 
 
-def run_rag_graph(question: str) -> dict:
-    return rag_graph.invoke({
+def run_rag_graph(question: str, request_context=None) -> dict:
+    state = {
         "question": question,
         "query": question,
         "context": "",
@@ -678,4 +678,11 @@ def run_rag_graph(question: str) -> dict:
         "sub_questions": None,
         "is_sub_agent": False,
         "sub_results": [],
-    })
+    }
+    if request_context is None:
+        return rag_graph.invoke(state)
+
+    from backend.chat.streaming import use_request_context
+
+    with use_request_context(request_context):
+        return rag_graph.invoke(state)
