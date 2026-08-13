@@ -6,6 +6,9 @@
 
 !.gitignore
 !README.md
+!STAGE_0_BASELINE.md
+!UPSTREAM_MANIFEST.yaml
+!UPSTREAM_SYNC_POLICY.md
 
 # Keep RAG system code
 !/rag/
