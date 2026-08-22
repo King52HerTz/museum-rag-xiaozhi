@@ -21,7 +21,8 @@ data/
 .worktrees/
 
 # test
-tests/
+tests/__pycache__/
+tests/*.pyc
 
 # Node / Frontend development
 node_modules/
