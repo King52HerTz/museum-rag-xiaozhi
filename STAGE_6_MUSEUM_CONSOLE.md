@@ -47,4 +47,4 @@ POST   /xiaozhi/museum/rag/query
 
 ## 下一阶段
 
-阶段 7 处理真实 SmartRing 设备绑定和本地 WebSocket 切换；官方小智服务继续作为回退路径。
+阶段 7 已补充 SmartRing 本地 WebSocket 切换入口；下一阶段进行真实设备上线、智能体绑定和语音问答闭环回归。

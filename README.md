@@ -145,6 +145,7 @@ rag/SuperMew-main/.env.example
 
 - [阶段 4：本地小智服务端启动回归](STAGE_4_XIAOZHI_LOCAL_SERVICE.md)
 - [阶段 6：管理端统一知识库资料管理](STAGE_6_MUSEUM_CONSOLE.md)
+- [阶段 7：智博导览设备本地 WebSocket 切换](STAGE_7_SMARTRING_LOCAL_WS.md)
 
 ## 项目定位
 
