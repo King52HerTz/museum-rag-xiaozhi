@@ -114,7 +114,7 @@ class RagTrace(RagTraceFields):
 
 
 class HitlResumeState(StrictSchema):
-    """HITL 恢复状态 Schema，仅作为第三阶段兼容层，不主动启用交互。"""
+    """Validated snapshot used to resume a paused RAG request."""
 
     question: str = Field(min_length=1)
     route: Literal["clarify", "scope_select"]
