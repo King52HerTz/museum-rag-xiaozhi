@@ -37,8 +37,11 @@ public class MuseumRagController {
     @PostMapping("/documents/upload")
     @Operation(summary = "上传文档到博物馆知识库")
     @RequiresPermissions("sys:role:normal")
-    public Result<Object> uploadDocument(@RequestParam("file") MultipartFile file) {
-        return new Result<>().ok(museumRagService.uploadDocument(file));
+    public Result<Object> uploadDocument(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "museum", required = false) String museum,
+            @RequestParam(value = "exhibition", required = false) String exhibition) {
+        return new Result<>().ok(museumRagService.uploadDocument(file, museum, exhibition));
     }
 
     @GetMapping("/documents/upload/jobs")
