@@ -142,7 +142,15 @@ def search_museum_knowledge(
     museum = _safe_text(plugin_config.get("museum"), "湖南省博物馆")
     exhibition = _safe_text(plugin_config.get("exhibition"), "")
     top_k = plugin_config.get("top_k", 5)
+    try:
+        top_k = int(top_k)
+    except (TypeError, ValueError):
+        top_k = 5
     timeout = plugin_config.get("timeout", 8)
+    try:
+        timeout = float(timeout)
+    except (TypeError, ValueError):
+        timeout = 8.0
     need_trace = bool(plugin_config.get("need_trace", True))
     request_id = uuid.uuid4().hex[:16]
     started_at = time.perf_counter()
