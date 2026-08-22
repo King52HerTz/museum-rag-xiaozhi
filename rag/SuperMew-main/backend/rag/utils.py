@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Tuple, Dict, Any, Optional
+from typing import List, Tuple, Dict, Any, Literal, Optional
 import os
 import json
 import requests
@@ -8,16 +8,40 @@ from backend.indexing.milvus_client import get_milvus_store
 from backend.indexing.embedding import embedding_service as _embedding_service
 from backend.indexing.parent_chunk_store import ParentChunkStore
 from langchain.chat_models import init_chat_model
+from pydantic import BaseModel, Field
+
+
+def _optional_env(name: str) -> Optional[str]:
+    """Read an optional setting while treating template placeholders as unset."""
+    value = (os.getenv(name) or "").strip()
+    if not value:
+        return None
+    normalized = value.lower()
+    if (
+        normalized.startswith(("your_", "your-", "replace-with"))
+        or "your-rerank" in normalized
+        or "your_rerank" in normalized
+    ):
+        return None
+    return value
 
 ARK_API_KEY = os.getenv("ARK_API_KEY")
+FAST_MODEL = os.getenv("FAST_MODEL")
 MODEL = os.getenv("MODEL")
 BASE_URL = os.getenv("BASE_URL")
-RERANK_MODEL = os.getenv("RERANK_MODEL")
-RERANK_BINDING_HOST = os.getenv("RERANK_BINDING_HOST")
-RERANK_API_KEY = os.getenv("RERANK_API_KEY")
+RERANK_MODEL = _optional_env("RERANK_MODEL")
+RERANK_BINDING_HOST = _optional_env("RERANK_BINDING_HOST")
+RERANK_API_KEY = _optional_env("RERANK_API_KEY")
+RERANK_ENABLED = bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST)
+try:
+    RERANK_TIMEOUT_SECONDS = max(float(os.getenv("RERANK_TIMEOUT_SECONDS", "5")), 0.1)
+except ValueError:
+    RERANK_TIMEOUT_SECONDS = 5.0
 AUTO_MERGE_ENABLED = os.getenv("AUTO_MERGE_ENABLED", "true").lower() != "false"
 AUTO_MERGE_THRESHOLD = int(os.getenv("AUTO_MERGE_THRESHOLD", "2"))
 LEAF_RETRIEVE_LEVEL = int(os.getenv("LEAF_RETRIEVE_LEVEL", "3"))
+
+
 def _read_positive_int_env(name: str, default: int) -> int:
     try:
         return max(int(os.getenv(name, str(default))), 1)
@@ -27,6 +51,7 @@ def _read_positive_int_env(name: str, default: int) -> int:
 
 RETRIEVAL_CANDIDATE_MULTIPLIER = _read_positive_int_env("RETRIEVAL_CANDIDATE_MULTIPLIER", 3)
 _RETRIEVAL_CANDIDATE_K_RAW = os.getenv("RETRIEVAL_CANDIDATE_K", "").strip()
+RETRIEVAL_TOP_K = _read_positive_int_env("RETRIEVAL_TOP_K", 8)
 
 
 def _read_float_env(name: str, default: float) -> float:
@@ -60,6 +85,7 @@ RETRIEVAL_TRACE_FIELDS = (
     "rerank_model",
     "rerank_endpoint",
     "rerank_error",
+    "rerank_timeout_seconds",
     "rerank_min_score",
     "post_rerank_count",
     "post_threshold_count",
@@ -74,6 +100,7 @@ RETRIEVAL_TRACE_FIELDS = (
 _milvus_manager = get_milvus_store()
 _parent_chunk_store = ParentChunkStore()
 
+_rewrite_model = None
 _stepback_model = None
 
 
@@ -271,11 +298,12 @@ def dedupe_documents(docs: List[dict]) -> List[dict]:
 def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[dict], Dict[str, Any]]:
     docs_with_rank = [{**doc, "rrf_rank": i} for i, doc in enumerate(docs, 1)]
     meta: Dict[str, Any] = {
-        "rerank_enabled": bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST),
+        "rerank_enabled": RERANK_ENABLED,
         "rerank_applied": False,
         "rerank_model": RERANK_MODEL,
         "rerank_endpoint": _get_rerank_endpoint(),
         "rerank_error": None,
+        "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
         "candidate_count": len(docs_with_rank),
     }
     if not docs_with_rank or not meta["rerank_enabled"]:
@@ -299,7 +327,7 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
             meta["rerank_endpoint"],
             headers=headers,
             json=payload,
-            timeout=15,
+            timeout=RERANK_TIMEOUT_SECONDS,
         )
         if response.status_code >= 400:
             meta["rerank_error"] = f"HTTP {response.status_code}: {response.text}"
@@ -324,6 +352,86 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
     except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
         meta["rerank_error"] = str(e)
         return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+
+
+class RewritePlan(BaseModel):
+    method: Literal["step_back", "hyde"] = Field(
+        description="本轮唯一使用的查询重写方式"
+    )
+    step_back_question: str = Field(
+        default="",
+        max_length=300,
+        description="仅在 method=step_back 时填写的抽象退步问题",
+    )
+    hyde_document: str = Field(
+        default="",
+        max_length=1200,
+        description="仅在 method=hyde 时填写的假设性答案文档",
+    )
+
+
+REWRITE_PROMPT = (
+    "你是 RAG 查询重写规划器。初次检索已经找到相关信号，但证据不足。"
+    "请在 step_back 和 hyde 中只选择一种重写方式，并同时生成该方式需要的内容。\n\n"
+    "选择规则：\n"
+    "- step_back：原问题过于具体，包含实体名、型号、时间、条件或细节，"
+    "需要提升到更概括的概念、机制或原理后再检索。\n"
+    "- hyde：原问题模糊、概念性强、缺少知识库常用术语，"
+    "适合先生成一段可能的答案式文档，再用这段文档检索真实证据。\n\n"
+    "约束：\n"
+    "- method=step_back 时，只填写 step_back_question，hyde_document 必须留空。\n"
+    "- method=hyde 时，只填写 hyde_document，step_back_question 必须留空。\n"
+    "- HyDE 文档只能用于检索，不代表真实证据，不要编造引用或来源。\n\n"
+    "用户问题：{query}"
+)
+
+
+def _get_rewrite_model():
+    global _rewrite_model
+    if not ARK_API_KEY or not FAST_MODEL:
+        return None
+    if _rewrite_model is None:
+        _rewrite_model = init_chat_model(
+            model=FAST_MODEL,
+            model_provider="openai",
+            api_key=ARK_API_KEY,
+            base_url=BASE_URL,
+            temperature=0,
+            stream_usage=True,
+        )
+    return _rewrite_model
+
+
+def rewrite_query_once(query: str) -> dict:
+    """Run one structured query rewrite plan for the upgraded RAG pipeline."""
+    model = _get_rewrite_model()
+    if not model:
+        raise RuntimeError("FAST_MODEL is required for query rewriting")
+
+    result = model.with_structured_output(RewritePlan).invoke(
+        [{"role": "user", "content": REWRITE_PROMPT.format(query=query)}]
+    )
+    method = result.method
+    step_back_question = (result.step_back_question or "").strip()
+    hyde_document = (result.hyde_document or "").strip()
+
+    if method == "step_back":
+        if not step_back_question or hyde_document:
+            raise ValueError("Step-back rewrite plan must contain only step_back_question")
+        rewritten_query = f"{query}\n\n退步问题：{step_back_question}"
+    elif method == "hyde":
+        if not hyde_document or step_back_question:
+            raise ValueError("HyDE rewrite plan must contain only hyde_document")
+        rewritten_query = f"{query}\n\n假设性答案文档：{hyde_document}"
+    else:
+        raise ValueError(f"Unsupported rewrite method: {method}")
+
+    return {
+        "rewrite_method": method,
+        "rewritten_query": rewritten_query,
+        "step_back_question": step_back_question,
+        "hyde_document": hyde_document,
+    }
 
 
 def _get_stepback_model():
@@ -438,7 +546,7 @@ def _finalize_retrieval(
 
 def retrieve_documents(
     query: str,
-    top_k: int = 5,
+    top_k: int = RETRIEVAL_TOP_K,
     filter_expr: str = "",
     trace_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
@@ -448,7 +556,34 @@ def retrieve_documents(
     try:
         dense_embeddings = _embedding_service.get_embeddings([query])
         dense_embedding = dense_embeddings[0]
+    except Exception:
+        return {
+            "docs": [],
+            "meta": {
+                "rerank_enabled": RERANK_ENABLED,
+                "rerank_applied": False,
+                "rerank_model": RERANK_MODEL,
+                "rerank_endpoint": _get_rerank_endpoint(),
+                "rerank_error": "embedding_failed",
+                "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
+                "retrieval_mode": "failed",
+                "retrieval_pipeline": "recall_merge_rerank",
+                "candidate_k": candidate_k,
+                **candidate_config,
+                "retrieval_top_k": top_k,
+                "leaf_retrieve_level": LEAF_RETRIEVE_LEVEL,
+                "recall_count": 0,
+                **_empty_merge_meta(),
+                "candidate_count": 0,
+                "rerank_min_score": RERANK_MIN_SCORE,
+                "post_rerank_count": 0,
+                "post_threshold_count": 0,
+                "retrieval_empty": True,
+                **extra_trace,
+            },
+        }
 
+    try:
         retrieved = _milvus_manager.hybrid_retrieve(
             dense_embedding=dense_embedding,
             query=query,
@@ -467,8 +602,6 @@ def retrieve_documents(
         return result
     except Exception:
         try:
-            dense_embeddings = _embedding_service.get_embeddings([query])
-            dense_embedding = dense_embeddings[0]
             retrieved = _milvus_manager.dense_retrieve(
                 dense_embedding=dense_embedding,
                 top_k=candidate_k,
@@ -488,11 +621,12 @@ def retrieve_documents(
             return {
                 "docs": [],
                 "meta": {
-                    "rerank_enabled": bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST),
+                    "rerank_enabled": RERANK_ENABLED,
                     "rerank_applied": False,
                     "rerank_model": RERANK_MODEL,
                     "rerank_endpoint": _get_rerank_endpoint(),
                     "rerank_error": "retrieve_failed",
+                    "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
                     "retrieval_mode": "failed",
                     "retrieval_pipeline": "recall_merge_rerank",
                     "candidate_k": candidate_k,

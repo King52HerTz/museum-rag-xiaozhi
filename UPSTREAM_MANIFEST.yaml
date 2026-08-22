@@ -1,0 +1,50 @@
+schema_version: 1
+project: museum-rag-xiaozhi
+updated_at: 2026-08-13
+
+# This file records source ownership and synchronization boundaries.
+# It intentionally contains no credentials, local paths outside this repository,
+# model references, or runtime configuration values.
+components:
+  xiaozhi:
+    source: https://github.com/xinnan-tech/xiaozhi-esp32-server.git
+    local_path: xiaozhi-esp32-server-main
+    local_source_type: vendored_snapshot
+    local_commit: unknown
+    checked_upstream_branch: main
+    checked_upstream_commit: 17560a7d295a0a7f3e46add30bb584d486b651c3
+    sync_policy: release_or_security_update_only
+    local_extension_boundary:
+      - main/manager-api/src/main/java/xiaozhi/modules/museum
+      - main/manager-web/src/views/MuseumKnowledge.vue
+      - main/manager-web/src/apis/module/museumRag.js
+      - main/xiaozhi-server/plugins_func/functions/search_museum_knowledge.py
+
+  supermew:
+    source: https://github.com/icey1287/SuperMew.git
+    local_path: rag/SuperMew-main
+    local_source_type: vendored_snapshot
+    local_commit: unknown
+    checked_upstream_branch: main
+    checked_upstream_commit: f997821db835c9c080accaf1f78c2c4a602fe4b7
+    sync_policy: upgrade_by_tested_batch
+    local_extension_boundary:
+      - backend/api/routes/museum.py
+      - backend/indexing/document_profile_store.py
+      - backend/infra/auth.py
+      - backend/app.py
+      - backend/api/router.py
+      - frontend/src/views
+
+  hardware:
+    local_path: yingjian/SmartRing-Plus-main
+    source_policy: fixed
+    sync_policy: excluded_from_upstream_updates
+    reason: hardware version is already validated and is not part of this software upgrade.
+
+repository:
+  stable_baseline_branch: main
+  stable_baseline_commit: 27f22d8
+  integration_candidate_branch: codex/sync-supermew-upstream-20260813
+  integration_candidate_commit: 481b8b8
+  release_rule: do_not_release_a_dirty_worktree

@@ -1,6 +1,8 @@
 from langchain_core.tools import tool
 
 from backend.chat.rag_context import record_rag_context
+from backend.chat.request_context import ChatRequestContext
+from backend.chat.streaming import use_request_context
 from backend.rag.pipeline import run_rag_graph
 
 _KNOWLEDGE_TOOL_CALLS_THIS_TURN = 0
@@ -18,6 +20,59 @@ def _try_acquire_knowledge_tool_call() -> bool:
         return False
     _KNOWLEDGE_TOOL_CALLS_THIS_TURN += 1
     return True
+
+
+def _format_retrieved_chunks(docs: list[dict]) -> str:
+    formatted = []
+    for i, result in enumerate(docs, 1):
+        source = result.get("filename", "Unknown")
+        page = result.get("page_number", "N/A")
+        text = result.get("text", "")
+        formatted.append(f"[{i}] {source} (Page {page}):\n{text}")
+    return "Retrieved Chunks:\n" + "\n\n---\n\n".join(formatted)
+
+
+def make_search_knowledge_base(ctx: ChatRequestContext):
+    """创建绑定到单次请求上下文的知识库工具。"""
+
+    @tool("search_knowledge_base")
+    def search_knowledge_base_for_request(query: str) -> str:
+        """Search for information in the knowledge base using hybrid retrieval."""
+        if not ctx.acquire_knowledge_tool_slot():
+            return (
+                "TOOL_CALL_LIMIT_REACHED: search_knowledge_base has already been called once in this turn. "
+                "Use the existing retrieval result and provide the final answer directly."
+            )
+
+        with use_request_context(ctx):
+            rag_result = run_rag_graph(query, ctx)
+
+        docs = rag_result.get("docs", []) if isinstance(rag_result, dict) else []
+        rag_trace = rag_result.get("rag_trace", {}) if isinstance(rag_result, dict) else {}
+        hitl_resume_state = (
+            rag_result.get("hitl_resume_state")
+            if isinstance(rag_result, dict)
+            else None
+        )
+        ctx.store_rag_trace(rag_trace, hitl_resume_state)
+
+        status = rag_trace.get("retrieval_status") if isinstance(rag_trace, dict) else None
+        route = rag_trace.get("route") if isinstance(rag_trace, dict) else None
+        if status == "needs_clarification" or route == "clarify":
+            prompt = rag_trace.get("hitl_prompt") or "Please provide one more detail so I can continue."
+            return f"NEEDS_CLARIFICATION: {prompt}"
+        if status == "needs_scope_selection" or route == "scope_select":
+            prompt = rag_trace.get("hitl_prompt") or "Please choose a knowledge-base direction."
+            options = rag_trace.get("hitl_options") or []
+            if options:
+                prompt += "\nOptions: " + "; ".join(str(item) for item in options)
+            return f"NEEDS_SCOPE_SELECTION: {prompt}"
+
+        if not docs:
+            return "No relevant documents found in the knowledge base."
+        return _format_retrieved_chunks(docs)
+
+    return search_knowledge_base_for_request
 
 
 @tool("search_knowledge_base")
@@ -38,11 +93,4 @@ def search_knowledge_base(query: str) -> str:
     if not docs:
         return "No relevant documents found in the knowledge base."
 
-    formatted = []
-    for i, result in enumerate(docs, 1):
-        source = result.get("filename", "Unknown")
-        page = result.get("page_number", "N/A")
-        text = result.get("text", "")
-        formatted.append(f"[{i}] {source} (Page {page}):\n{text}")
-
-    return "Retrieved Chunks:\n" + "\n\n---\n\n".join(formatted)
+    return _format_retrieved_chunks(docs)

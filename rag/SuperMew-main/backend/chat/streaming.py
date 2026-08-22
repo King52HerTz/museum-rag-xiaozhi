@@ -1,12 +1,28 @@
 """RAG 检索步骤的 SSE 实时推送（跨线程安全，供 rag pipeline 在 worker 线程中调用）。"""
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 import threading
 
 _RAG_STEP_QUEUE = None
 _RAG_STEP_LOOP = None
+_REQUEST_CONTEXT: ContextVar[object | None] = ContextVar("rag_request_context", default=None)
 
 # 子 Agent 分组上下文（线程级，支持并行子 Agent 各自独立标识）
 _sub_agent_context = threading.local()
+
+
+@contextmanager
+def use_request_context(context):
+    token = _REQUEST_CONTEXT.set(context)
+    try:
+        yield context
+    finally:
+        _REQUEST_CONTEXT.reset(token)
+
+
+def get_request_context():
+    return _REQUEST_CONTEXT.get()
 
 
 def set_rag_step_queue(queue) -> None:
@@ -41,6 +57,16 @@ def get_sub_agent_group():
 
 def emit_rag_step(icon: str, label: str, detail: str = "") -> None:
     """向队列发送一个 RAG 检索步骤。支持跨线程安全调用。"""
+    context = get_request_context()
+    if context is not None:
+        context.emit_rag_step(
+            icon,
+            label,
+            detail,
+            group=get_sub_agent_group(),
+        )
+        return
+
     global _RAG_STEP_QUEUE, _RAG_STEP_LOOP
     if _RAG_STEP_QUEUE is not None and _RAG_STEP_LOOP is not None:
         step = {"icon": icon, "label": label, "detail": detail}
