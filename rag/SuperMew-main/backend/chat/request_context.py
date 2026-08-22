@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-from backend.schemas.chat import normalize_rag_trace
+from backend.schemas.chat import HitlResumeState, normalize_rag_trace
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ class ChatRequestContext:
     _lock: threading.RLock = field(default_factory=threading.RLock)
     _active: bool = True
     _rag_trace: Optional[dict] = None
+    _hitl_resume_state: Optional[dict] = None
     _knowledge_tool_slots_used: int = 0
     _started_at: float = field(default_factory=time.monotonic)
     _last_step_at: Optional[float] = None
@@ -85,23 +86,43 @@ class ChatRequestContext:
         except Exception:
             logger.exception("Failed to emit RAG step")
 
-    def store_rag_trace(self, rag_trace: Optional[dict]) -> None:
+    def store_rag_trace(
+        self,
+        rag_trace: Optional[dict],
+        hitl_resume_state: Optional[dict] = None,
+    ) -> None:
         normalized_trace = normalize_rag_trace(rag_trace)
         if not normalized_trace:
             return
+        normalized_resume_state = None
+        if isinstance(hitl_resume_state, dict):
+            try:
+                normalized_resume_state = HitlResumeState.model_validate(
+                    hitl_resume_state
+                ).model_dump()
+            except ValueError:
+                normalized_resume_state = None
         with self._lock:
             if self._active:
                 self._rag_trace = {"rag_trace": normalized_trace}
+                self._hitl_resume_state = normalized_resume_state
 
     def take_rag_trace(self) -> Optional[dict]:
         with self._lock:
             context = self._rag_trace
             self._rag_trace = None
+            if context is not None and self._hitl_resume_state is not None:
+                context["hitl_resume_state"] = self._hitl_resume_state
+            self._hitl_resume_state = None
             return context
 
     def peek_rag_trace(self) -> Optional[dict]:
         with self._lock:
             return self._rag_trace
+
+    def peek_hitl_resume_state(self) -> Optional[dict]:
+        with self._lock:
+            return self._hitl_resume_state
 
     def reset_knowledge_tool_budget(self) -> None:
         with self._lock:

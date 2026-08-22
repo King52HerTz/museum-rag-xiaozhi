@@ -49,7 +49,24 @@ def make_search_knowledge_base(ctx: ChatRequestContext):
 
         docs = rag_result.get("docs", []) if isinstance(rag_result, dict) else []
         rag_trace = rag_result.get("rag_trace", {}) if isinstance(rag_result, dict) else {}
-        ctx.store_rag_trace(rag_trace)
+        hitl_resume_state = (
+            rag_result.get("hitl_resume_state")
+            if isinstance(rag_result, dict)
+            else None
+        )
+        ctx.store_rag_trace(rag_trace, hitl_resume_state)
+
+        status = rag_trace.get("retrieval_status") if isinstance(rag_trace, dict) else None
+        route = rag_trace.get("route") if isinstance(rag_trace, dict) else None
+        if status == "needs_clarification" or route == "clarify":
+            prompt = rag_trace.get("hitl_prompt") or "Please provide one more detail so I can continue."
+            return f"NEEDS_CLARIFICATION: {prompt}"
+        if status == "needs_scope_selection" or route == "scope_select":
+            prompt = rag_trace.get("hitl_prompt") or "Please choose a knowledge-base direction."
+            options = rag_trace.get("hitl_options") or []
+            if options:
+                prompt += "\nOptions: " + "; ".join(str(item) for item in options)
+            return f"NEEDS_SCOPE_SELECTION: {prompt}"
 
         if not docs:
             return "No relevant documents found in the knowledge base."
