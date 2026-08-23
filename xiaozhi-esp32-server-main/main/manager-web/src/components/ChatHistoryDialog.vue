@@ -10,6 +10,16 @@
                 </template>
             </span>
         </template>
+        <div v-if="currentSessionId" class="rag-audit-panel" :class="`rag-audit-${ragSummary.status}`">
+            <div class="rag-audit-header">
+                <span class="rag-audit-dot"></span>
+                <strong>{{ ragSummary.title }}</strong>
+                <span class="rag-audit-count" v-if="ragSummary.callCount > 0">
+                    调用 {{ ragSummary.callCount }} 次
+                </span>
+            </div>
+            <div class="rag-audit-detail">{{ ragSummary.detail }}</div>
+        </div>
         <div class="chat-container">
             <div class="session-list" @scroll="handleScroll">
                 <div v-for="session in sessions" :key="session.sessionId" class="session-item"
@@ -141,6 +151,77 @@ export default {
         }
     },
     computed: {
+        ragSummary() {
+            const calls = [];
+            const results = [];
+
+            (this.messages || []).forEach(message => {
+                const parts = this.extractContentFromString(message.content);
+                if (!Array.isArray(parts)) return;
+
+                parts.forEach(item => {
+                    if (!item || typeof item !== 'object') return;
+                    const text = String(item.text || '');
+                    if (item.type === 'tool' && text.indexOf('search_museum_knowledge(') === 0) {
+                        calls.push(text);
+                    }
+                    if (item.type === 'tool_result') {
+                        results.push(text);
+                    }
+                });
+            });
+
+            if (calls.length === 0) {
+                return {
+                    status: 'none',
+                    title: '当前会话未记录博物馆知识库调用',
+                    detail: '未发现 search_museum_knowledge 工具记录；旧会话或未开启聊天记录上报时，请以服务端日志为准。',
+                    callCount: 0
+                };
+            }
+
+            const successCount = results.filter(text => text.indexOf('博物馆知识库检索结果：') >= 0).length;
+            const noKnowledgeCount = results.filter(text => text.indexOf('没有检索到足够相关的资料') >= 0).length;
+            const failedCount = results.filter(text => /知识库.*(失败|异常|不可用)|无法连接博物馆知识库|桥接认证失败/.test(text)).length;
+            const contextCount = results.reduce((total, text) => {
+                const matches = text.match(/\[\d+\]\s*来源/g);
+                return total + (matches ? matches.length : 0);
+            }, 0);
+
+            if (successCount > 0) {
+                return {
+                    status: 'success',
+                    title: '已调用博物馆知识库',
+                    detail: `检索结果已返回${contextCount > 0 ? `，识别到约 ${contextCount} 个资料片段` : ''}；最终回答由小智服务端交给大模型生成。`,
+                    callCount: calls.length
+                };
+            }
+
+            if (noKnowledgeCount > 0) {
+                return {
+                    status: 'warning',
+                    title: '已调用博物馆知识库，但未检索到足够资料',
+                    detail: '这表示请求经过了 RAG，只是当前问题没有召回足够相关的文档。',
+                    callCount: calls.length
+                };
+            }
+
+            if (failedCount > 0) {
+                return {
+                    status: 'error',
+                    title: '已调用博物馆知识库，但请求失败',
+                    detail: '请检查 SuperMew、桥接密钥和服务端日志中的 trace 信息。',
+                    callCount: calls.length
+                };
+            }
+
+            return {
+                status: 'pending',
+                title: '已发起博物馆知识库调用',
+                detail: '聊天记录中暂未找到对应的工具结果；请以小智服务端日志为最终依据。',
+                callCount: calls.length
+            };
+        },
         messagesWithTime() {
             if (!this.messages || this.messages.length === 0) return [];
 
@@ -411,6 +492,74 @@ export default {
 .chat-container {
     display: flex;
     height: 100%;
+}
+
+.rag-audit-panel {
+    margin: 0 20px 12px;
+    padding: 10px 14px;
+    border: 1px solid #d9e7ff;
+    border-radius: 8px;
+    background: #f5f9ff;
+    color: #3d4566;
+    text-align: left;
+}
+
+.rag-audit-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+}
+
+.rag-audit-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #5778ff;
+}
+
+.rag-audit-count {
+    margin-left: auto;
+    color: #6b7a99;
+    font-size: 12px;
+}
+
+.rag-audit-detail {
+    margin-top: 5px;
+    color: #6b7a99;
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.rag-audit-success {
+    border-color: #b7ebc6;
+    background: #f1fff5;
+}
+
+.rag-audit-success .rag-audit-dot {
+    background: #24a148;
+}
+
+.rag-audit-warning {
+    border-color: #ffe3a3;
+    background: #fffaf0;
+}
+
+.rag-audit-warning .rag-audit-dot {
+    background: #d99000;
+}
+
+.rag-audit-error {
+    border-color: #ffc7c7;
+    background: #fff5f5;
+}
+
+.rag-audit-error .rag-audit-dot {
+    background: #d93025;
+}
+
+.rag-audit-pending .rag-audit-dot {
+    background: #8b95a7;
 }
 
 .session-list {
