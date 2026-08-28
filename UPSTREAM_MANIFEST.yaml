@@ -39,8 +39,8 @@ components:
       clone_path: rag/SuperMew-upstream
       source_commit: 23f8f14970954d50ab5c3f7af97919935cccde4d
       working_branch: codex/museum-upgrade
-      working_commit: dfde6de
-      status: isolated_validation_prepared
+      working_commit: 4271f8b
+      status: isolated_milvus_smoke_passed_api_windows_blocked
       local_only: true
 
   hardware:
