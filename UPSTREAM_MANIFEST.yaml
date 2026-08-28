@@ -1,6 +1,6 @@
 schema_version: 1
 project: museum-rag-xiaozhi
-updated_at: 2026-08-13
+updated_at: 2026-08-29
 
 # This file records source ownership and synchronization boundaries.
 # It intentionally contains no credentials, local paths outside this repository,
@@ -35,6 +35,13 @@ components:
       - backend/app.py
       - backend/api/router.py
       - frontend/src/views
+    upgrade_candidate:
+      clone_path: rag/SuperMew-upstream
+      source_commit: 23f8f14970954d50ab5c3f7af97919935cccde4d
+      working_branch: codex/museum-upgrade
+      working_commit: dfde6de
+      status: isolated_validation_prepared
+      local_only: true
 
   hardware:
     local_path: yingjian/SmartRing-Plus-main
