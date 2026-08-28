@@ -30,6 +30,8 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   `runtime-logs/corpus-build/before-mawangdui-replacement.json`，不提交到仓库。
 - 10 个验收问题均命中预期来源，覆盖 T 形帛画、黑地彩绘棺、素纱单衣、玉、
   半箱式琴、帛书、辛追数字人、展品辨析和参观时长等场景。
+- 已额外保存稳定版基线结果（10 题全部通过，平均检索耗时约 919 ms），只包含来源、
+  trace 摘要和耗时，不包含 API Key 或回答原文；基线文件位于本机 `runtime-logs/corpus-build`。
 
 ### 3. 最新 SuperMew 独立升级副本
 
