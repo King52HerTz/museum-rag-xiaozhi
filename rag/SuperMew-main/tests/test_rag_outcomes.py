@@ -5,6 +5,7 @@ from backend.rag.outcomes import (
     partial_evidence_instruction,
     retrieval_user_message,
 )
+from backend.schemas.chat import normalize_rag_trace
 
 
 def test_status_maps_to_stable_outcomes():
@@ -31,3 +32,14 @@ def test_partial_evidence_message_discloses_coverage_gaps():
     assert "MISSING_DIMENSION" in message
     assert "还缺少哪个展柜？" in message
     assert retrieval_user_message(result) is None
+
+
+def test_coverage_gaps_survive_trace_normalization():
+    trace = normalize_rag_trace({
+        "retrieval_outcome": "INSUFFICIENT_EVIDENCE",
+        "coverage_gap_codes": ["MISSING_DIMENSION"],
+        "coverage_gap_questions": ["还缺少哪项官方数据？"],
+    })
+
+    assert trace["coverage_gap_codes"] == ["MISSING_DIMENSION"]
+    assert trace["coverage_gap_questions"] == ["还缺少哪项官方数据？"]

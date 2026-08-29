@@ -61,6 +61,8 @@ class RagTraceFields(StrictSchema):
     grader_evidence_characters: Optional[int] = Field(default=None, ge=0)
     grader_evidence_omitted_count: Optional[int] = Field(default=None, ge=0)
     grader_evidence_truncated_count: Optional[int] = Field(default=None, ge=0)
+    coverage_gap_codes: Optional[List[str]] = None
+    coverage_gap_questions: Optional[List[str]] = None
     missing_slots: Optional[List[str]] = None
     hitl_prompt: Optional[str] = None
     hitl_options: Optional[List[str]] = None

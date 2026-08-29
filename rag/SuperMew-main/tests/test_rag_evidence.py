@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from backend.chat import service as _chat_service  # noqa: F401
 from backend.rag.evidence import pack_evidence
-from backend.tools.knowledge import _format_retrieved_chunks
+from backend.tools.knowledge import _format_retrieved_chunks, _render_rag_result
 
 
 def _doc(name: str, text: str) -> dict:
@@ -59,3 +59,39 @@ def test_knowledge_tool_result_is_bounded_before_entering_agent_history():
     assert "[1] doc-0.md" in rendered
     assert "doc-2.md" not in rendered
     assert "EVIDENCE_CONTEXT_NOTICE" in rendered
+
+
+def test_knowledge_tool_marks_partial_evidence_without_dropping_chunks():
+    rendered = _render_rag_result({
+        "docs": [_doc("black-coffin.md", "黑地彩绘棺的尺寸与装饰资料")],
+        "retrieval_status": "partial",
+        "retrieval_outcome": "INSUFFICIENT_EVIDENCE",
+        "coverage_gap_questions": ["装饰纹样是否全部有官方释义？"],
+        "rag_trace": {
+            "retrieval_status": "partial",
+            "retrieval_outcome": "INSUFFICIENT_EVIDENCE",
+        },
+    })
+
+    assert rendered.startswith("PARTIAL_EVIDENCE:")
+    assert "只能回答已有证据支持的部分" in rendered
+    assert "装饰纹样是否全部有官方释义" in rendered
+    assert "[1] black-coffin.md" in rendered
+
+
+def test_knowledge_tool_distinguishes_no_knowledge_from_insufficient_evidence():
+    no_knowledge = _render_rag_result({
+        "docs": [],
+        "retrieval_status": "no_knowledge",
+        "retrieval_outcome": "NO_KNOWLEDGE",
+    })
+    insufficient = _render_rag_result({
+        "docs": [],
+        "retrieval_status": "provider_failed",
+        "retrieval_outcome": "INSUFFICIENT_EVIDENCE",
+    })
+
+    assert no_knowledge.startswith("NO_KNOWLEDGE:")
+    assert insufficient.startswith("INSUFFICIENT_EVIDENCE:")
+    assert "知识库中没有找到" in no_knowledge
+    assert "当前证据不足" in insufficient
