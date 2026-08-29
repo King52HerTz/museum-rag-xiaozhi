@@ -85,6 +85,10 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   复杂度规划器。新增边界测试后，相关回归共 83 项通过，提交为
   `744176d perf(rag): fast-path single-entity attribute queries`，离线基线更新为
   `2a557d6 chore(evaluation): refresh baseline after fast path`。
+- 已在升级分支加入 `evals/rag/mawangdui_annotated_v1.json` 和配套标注说明，包含 16 个样本：
+  11 个当前资料可回答、4 个资料缺口、1 个明确无知识问题，覆盖单事实、单对象多属性、跨文档
+  比较、时间状态、名称混淆、保守拒答和安全边界。标注集提交为
+  `bb412ea feat(evaluation): add mawangdui annotated dataset`，暂不替换发布门禁。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
