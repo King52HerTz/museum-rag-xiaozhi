@@ -275,7 +275,7 @@ function Stop-PreviousState {
 function Ensure-DockerReady {
     Assert-Command -Name "docker" -Message "Docker was not found. Install and start Docker Desktop first."
 
-    & docker info *> $null
+    & cmd.exe /d /c "docker info >nul 2>nul"
     if ($LASTEXITCODE -eq 0) {
         return
     }
@@ -291,7 +291,7 @@ function Ensure-DockerReady {
 
     $deadline = (Get-Date).AddSeconds(120)
     while ((Get-Date) -lt $deadline) {
-        & docker info *> $null
+        & cmd.exe /d /c "docker info >nul 2>nul"
         if ($LASTEXITCODE -eq 0) {
             Write-Step "Docker Desktop is ready."
             return
