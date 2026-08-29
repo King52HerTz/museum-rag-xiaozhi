@@ -41,6 +41,9 @@
   `INSUFFICIENT_EVIDENCE` 和 `PARTIAL_EVIDENCE`，并在系统提示中要求 Agent 只回答已有证据；
   兼容追踪保留 coverage gap 字段。该批次提交为 `d8aeb14 feat(rag): surface retrieval evidence outcomes`，
   当前稳定副本测试为 27 passed、11 个子测试通过。
+- 第四批复杂问题覆盖度迁移已完成：合成阶段会把未回答的子问题记录为
+  `coverage_gap_questions`，同时保留已召回片段并标记 `INSUFFICIENT_EVIDENCE`；完整测试为
+  28 passed、11 个子测试通过。该批次提交为 `478726c feat(rag): track synthesis coverage gaps`。
 
 ## 本地必须保留的功能
 
