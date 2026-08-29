@@ -60,6 +60,9 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   参数校验和小智插件兼容响应结构。
 - 升级分支新增模型配置预检脚本，只报告缺失、占位和地址格式问题，不打印密钥或发起模型请求；
   预检测试 3 项通过，提交为 `fbdce66 feat(evaluation): add model provider preflight`。
+- 预检工具现在支持 `--env-file` 读取另一份本机配置，不需要把稳定副本的 `.env` 或密钥复制到
+  升级副本；该改动提交为 `c7402c4 feat(evaluation): allow external env preflight`，新增测试后
+  预检与桥接契约共 12 项通过。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
@@ -116,7 +119,8 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 
 1. 先固定一个可审计且确实可调用的模型配置，解决当前 `MODEL_RATE_LIMITED`（核对模型部署、
    账户配额和 API Key 归属；必要时再评估退避或已配置的其他供应商）。密钥只通过本地环境变量
-   提供，不写入仓库；可先运行升级分支的 `scripts/check_model_provider_config.py`，在预检通过
+   提供，不写入仓库；可先运行升级分支的
+   `scripts/check_model_provider_config.py --env-file <已有本机 .env>`，在预检通过
    前不把 live 评测标记为通过。
 2. 在同一隔离索引上重跑 10 题应用层评测，至少确认路由、答案可回答性、来源证据和错误率，
    再扩充到更大的人工标注集；不能把仅有向量召回的结果当成答案质量。
