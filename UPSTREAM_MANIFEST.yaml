@@ -26,7 +26,7 @@ components:
     local_source_type: vendored_snapshot
     local_commit: unknown
     checked_upstream_branch: main
-    checked_upstream_commit: f997821db835c9c080accaf1f78c2c4a602fe4b7
+    checked_upstream_commit: 23f8f14970954d50ab5c3f7af97919935cccde4d
     sync_policy: upgrade_by_tested_batch
     local_extension_boundary:
       - backend/api/routes/museum.py
@@ -40,7 +40,7 @@ components:
       source_commit: 23f8f14970954d50ab5c3f7af97919935cccde4d
       working_branch: codex/museum-upgrade
       working_commit: 9c3ff85
-      status: isolated_indexed_retrieval_compare_passed_bridge_prepared_model_preflight_added_external_env_live_eval_support_provider_diagnosis_deepseek_structured_output_compatibility_added_partial_subagent_evidence_routing_fixed_single_entity_attribute_fast_path_added_mawangdui_annotation_v1_bridge_runbook_updated_live_eval_reached_rag_flow_but_quality_gate_not_passed
+      status: upstream_fetched_windows_portable_tests_passed_full_suite_requires_linux_security_primitives_migration_pending
       local_only: true
 
   hardware:
@@ -51,7 +51,7 @@ components:
 
 repository:
   stable_baseline_branch: main
-  stable_baseline_commit: 27f22d8
-  integration_candidate_branch: codex/sync-supermew-upstream-20260813
-  integration_candidate_commit: 481b8b8
+  stable_baseline_commit: f4c547e
+  integration_candidate_branch: codex/sync-supermew-upstream-20260830
+  integration_candidate_commit: 8dce5d8
   release_rule: do_not_release_a_dirty_worktree
