@@ -3,6 +3,7 @@ from langchain_core.tools import tool
 from backend.chat.rag_context import record_rag_context
 from backend.chat.request_context import ChatRequestContext
 from backend.chat.streaming import use_request_context
+from backend.rag.evidence import agent_evidence_character_budget, pack_evidence
 from backend.rag.pipeline import run_rag_graph
 
 _KNOWLEDGE_TOOL_CALLS_THIS_TURN = 0
@@ -23,13 +24,17 @@ def _try_acquire_knowledge_tool_call() -> bool:
 
 
 def _format_retrieved_chunks(docs: list[dict]) -> str:
-    formatted = []
-    for i, result in enumerate(docs, 1):
-        source = result.get("filename", "Unknown")
-        page = result.get("page_number", "N/A")
-        text = result.get("text", "")
-        formatted.append(f"[{i}] {source} (Page {page}):\n{text}")
-    return "Retrieved Chunks:\n" + "\n\n---\n\n".join(formatted)
+    evidence = pack_evidence(
+        docs,
+        maximum_characters=agent_evidence_character_budget(),
+    )
+    budget_notice = ""
+    if evidence.omitted_count or evidence.truncated_count:
+        budget_notice = (
+            "\nEVIDENCE_CONTEXT_NOTICE: Only the shown highest-ranked chunks fit "
+            "the answer context. Use only these chunks."
+        )
+    return "Retrieved Chunks:\n" + evidence.text + budget_notice
 
 
 def make_search_knowledge_base(ctx: ChatRequestContext):

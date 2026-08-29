@@ -56,6 +56,8 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("ANSWERABLE", result["retrieval_outcome"])
         self.assertEqual("answer", result["route"])
         self.assertEqual(docs, result["docs"])
+        self.assertGreater(result["rag_trace"]["grader_evidence_characters"], 0)
+        self.assertEqual(0, result["rag_trace"]["grader_evidence_omitted_count"])
 
     def test_empty_retrieval_short_circuits_evidence_grader(self):
         with (
@@ -68,6 +70,7 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("NO_KNOWLEDGE", result["retrieval_outcome"])
         self.assertEqual("no_knowledge", result["route"])
         self.assertEqual([], result["docs"])
+        self.assertEqual(0, result["rag_trace"]["grader_evidence_characters"])
 
     def test_structured_rewrite_plan_keeps_only_selected_method(self):
         rewrite = utils.RewritePlan(
