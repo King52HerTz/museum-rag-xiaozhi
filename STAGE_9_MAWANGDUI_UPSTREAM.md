@@ -94,6 +94,10 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 - 同批次的应用层 live RAG 评测生成了 10 条 Observation，但外部模型接口出现
   `MODEL_RATE_LIMITED` 和一次超时，导致报告被标记为未通过；该结果只能说明当前模型配额/
   限流条件不足，不能据此否定已经通过的向量召回对比，也不能作为发布质量结论。
+- 在启动 Docker 隔离依赖并用 WSL 启动升级 API 后，重新执行了同一套 10 题应用层回归；10/10
+  均在生成前以 `MODEL_RATE_LIMITED` 失败，检索结果为 0，报告仍未通过。单独调用方案 B
+  `/api/museum/query` 则真实返回 5 个 contexts，`retrieval_empty=false` 且索引身份为目标隔离
+  index，证明当前阻断位于模型供应商调用而不是 Milvus 召回或桥接响应。
 - 为排除“连续请求过快”这一因素，随后使用同一隔离索引运行了 2 条应用层探针，并设置
   `--inter-case-delay-seconds 10`；两条仍均返回 `MODEL_RATE_LIMITED`，说明当前阻断更可能是
   模型供应商配置、部署或配额问题，而不是评测用例间隔。脱敏 Observation、Report 和 Markdown
@@ -121,8 +125,10 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 
 隔离 Compose/环境模板已经在升级分支准备完成，并通过无敏感值的配置校验。后续按资源情况执行：
 
-1. 先固定一个可审计且确实可调用的模型配置，解决当前 `MODEL_RATE_LIMITED`（核对模型部署、
-   账户配额和 API Key 归属；必要时再评估退避或已配置的其他供应商）。密钥只通过本地环境变量
+1. 先固定一个可审计且确实可调用的模型配置，解决当前 `MODEL_RATE_LIMITED`（当前现有配置为
+   Ark/Doubao，若改用 DeepSeek 需在 SuperMew 本机 env 中单独配置；小智管理端的模型配置不会
+   自动同步）。核对模型部署、账户配额和 API Key 归属；必要时再评估退避或已配置的其他供应商。
+   密钥只通过本地环境变量
    提供，不写入仓库；可先运行升级分支的
    `scripts/check_model_provider_config.py --env-file <已有本机 .env>`，live 评测再使用
    `scripts/evaluate_rag.py run --env-file <升级环境 .env>`；在预检通过
