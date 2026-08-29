@@ -65,8 +65,9 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   预检与桥接契约共 12 项通过。
 - live 评测命令也支持同一个 `--env-file` 参数，并会在加载后端和模型前读取该文件；新增环境
   优先级与缺失文件测试后，升级分支提交为 `25a28af feat(evaluation): reuse external env for live runs`。
-- 当前使用现有稳定配置文件做脱敏预检，必需模型配置为 5/5，桥接密钥已配置；`EVALUATION_MODEL`
-  仍为可选缺省。该检查没有发起模型请求，也没有复制配置文件。
+- 当前使用现有稳定配置文件做脱敏预检，必需模型配置为 5/5；`EVALUATION_MODEL` 仍为可选
+  缺省。`BRIDGE_API_KEY` 仍是占位配置，因此只允许进入应用层评测，不能进行真实的小智到
+  SuperMew 服务端桥接。该检查没有发起模型请求，也没有复制配置文件。
 - 已针对 DeepSeek OpenAI 兼容接口补充结构化输出适配：证据评分、复杂度规划、查询重写和
   评测裁判在 DeepSeek endpoint 上统一使用 LangChain `function_calling`，其它模型仍保留默认
   策略；适配代码提交为 `bfdd26a fix(provider): use function calling for DeepSeek schemas`，
@@ -74,6 +75,11 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 - 因 RAG 源码指纹按设计发生变化，已按仓库既定命令重建离线 `baseline_v1.json`；模型预检、
   桥接契约、CLI 评测与适配器回归共 39 项通过（仅保留上游依赖弃用提示），新基线提交为
   `5ad9216 chore(evaluation): refresh offline rag baseline`。
+- 针对复杂问题子问题的路由又补了一层保护：子问题只要拿到 `partial` 或 `sufficient` 证据，
+  就交给最终 synthesis 合并，不会把局部缺口升级成整条主问题的澄清；完全没有答案线索时
+  仍保留 `clarify`、`scope_select` 和 `no_knowledge`。新增回归用例后，相关测试共 82 项通过，
+  修复提交为 `5e9a3cc fix(rag): keep partial sub-agent evidence for synthesis`，离线基线随之
+  更新为 `31060fa chore(evaluation): refresh baseline after routing fix`。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
@@ -114,13 +120,15 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   导入和检索验证，没有为了本机试跑而绕过安全校验。稳定版恢复后 `/docs` 返回 200，原有
   10 条验收问题再次全部命中预期来源。
 - 使用本机专用 `.env` 中的 DeepSeek 配置和上述兼容层重跑了同一套 10 题应用层评测：此前的
-  `PROVIDER_REQUEST_INVALID` 已消失，9/10 个用例完成了实际召回与模型流程，生成阶段和裁判
-  阶段的 provider failure rate 均为 0；但其中 `t_shape_worlds` 在复杂问题流程中仍超时，
-  `plain_silk_weight` 被当前证据评分路由为 `no_knowledge`，另有 1 个用例进入澄清，最终
-  `case_pass_rate=0.4`、`route_accuracy=0.7`、`complexity_accuracy=0.8`、
-  `document_recall_at_10=0.8`，所以报告仍未通过发布门禁。提高模型超时上限后重跑，超时用例仍然
-  相同；该结果用于定位复杂问题/资料覆盖和门禁标注问题，不能宣称答案质量已经达标。脱敏
-  Observation、Report 和 Markdown 报告保存在本机 `runtime-logs/corpus-build` 忽略目录。
+  `PROVIDER_REQUEST_INVALID` 已消失；开启 CPU 嵌入模型预热并将嵌入超时设为 60 秒后，10/10
+  个用例都完成了实际召回和模型流程，生成、裁判、检索三类 provider failure rate 均为 0，
+  `route_accuracy=1.0`、`complexity_accuracy=1.0`、`document_recall_at_10=1.0`，
+  `case_pass_rate=0.8`、`outcome_accuracy=0.8`，平均耗时约 5.49 秒、P95 约 12.10 秒。
+  两个未通过用例是 `t_shape_worlds` 和 `half_box_qin`：当前官方资料能支撑带限定条件的
+  部分回答，但没有覆盖问题要求的全部细节，因此保留 `INSUFFICIENT_EVIDENCE`，不能为了过门禁
+  把它们改判为完整可回答。新增子问题路由修复后，复杂流程会保留这些部分证据交给 synthesis，
+  评测报告仍未达到发布门槛。脱敏 Observation、Report 和 Markdown 报告保存在本机
+  `runtime-logs/corpus-build` 忽略目录。
 
 ## 当前边界
 
