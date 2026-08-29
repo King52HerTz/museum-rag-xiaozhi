@@ -37,6 +37,10 @@
   引用编号稳定的证据包；发生省略或截断时记录计数并提示回答仅使用已展示片段。该批次提交为
   `aeb5bd8 feat(rag): bound evidence context`，没有改变上传、`/api/museum/query` 或设备协议，
   当前稳定副本测试为 24 passed、11 个子测试通过。
+- 第三批结果消费语义迁移已完成：知识库工具现在明确区分 `NO_KNOWLEDGE`、
+  `INSUFFICIENT_EVIDENCE` 和 `PARTIAL_EVIDENCE`，并在系统提示中要求 Agent 只回答已有证据；
+  兼容追踪保留 coverage gap 字段。该批次提交为 `d8aeb14 feat(rag): surface retrieval evidence outcomes`，
+  当前稳定副本测试为 27 passed、11 个子测试通过。
 
 ## 本地必须保留的功能
 
