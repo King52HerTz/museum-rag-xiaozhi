@@ -17,6 +17,50 @@ class _FakeStructuredModel:
 
 
 class RagCoreCompatibilityTests(unittest.TestCase):
+    def test_complex_synthesis_marks_uncovered_sub_questions_as_partial(self):
+        class FakeContext:
+            def emit_rag_step(self, *_args, **_kwargs):
+                return None
+
+        result = pipeline.synthesis(
+            {
+                "question": "比较两件文物的特点",
+                "request_context": FakeContext(),
+                "rag_trace": {},
+                "sub_results": [
+                    {
+                        "question": "黑地彩绘棺的特点是什么？",
+                        "docs": [{
+                            "filename": "black-coffin.md",
+                            "text": "官方资料片段",
+                        }],
+                        "retrieval_status": "answerable",
+                        "rag_trace": {
+                            "query": "黑地彩绘棺的特点是什么？",
+                            "retrieval_status": "answerable",
+                        },
+                    },
+                    {
+                        "question": "另一件文物的特点是什么？",
+                        "docs": [],
+                        "retrieval_status": "no_knowledge",
+                        "rag_trace": {
+                            "query": "另一件文物的特点是什么？",
+                            "retrieval_status": "no_knowledge",
+                        },
+                    },
+                ],
+            }
+        )
+
+        self.assertEqual("partial", result["retrieval_status"])
+        self.assertEqual("INSUFFICIENT_EVIDENCE", result["retrieval_outcome"])
+        self.assertEqual("answer", result["route"])
+        self.assertEqual(
+            ["另一件文物的特点是什么？"],
+            result["rag_trace"]["coverage_gap_questions"],
+        )
+
     def test_sync_wrapper_creates_and_closes_legacy_context(self):
         captured = {}
 

@@ -838,8 +838,24 @@ def synthesis(state: RAGState) -> RAGState:
     original_trace = state.get("rag_trace") or {}
     has_docs = bool(deduped)
     retrieval_status = "answerable" if has_docs else "no_knowledge"
-    if has_docs and any(result.get("retrieval_status") == "partial" for result in sub_results):
+    uncovered_results = [
+        result
+        for result in sub_results
+        if result.get("retrieval_status") != "answerable"
+    ]
+    if has_docs and uncovered_results:
         retrieval_status = "partial"
+    coverage_gap_questions = (
+        list(
+            dict.fromkeys(
+                str(result.get("question") or "").strip()
+                for result in uncovered_results
+                if str(result.get("question") or "").strip()
+            )
+        )
+        if has_docs
+        else []
+    )
     hitl_traces = [
         trace for trace in sub_traces
         if trace.get("retrieval_status") in ("needs_clarification", "needs_scope_selection")
@@ -866,6 +882,7 @@ def synthesis(state: RAGState) -> RAGState:
                 if option not in hitl_options:
                     hitl_options.append(option)
 
+    route = "answer" if has_docs else (hitl_route or "no_knowledge")
     rag_trace = {
         **original_trace,
         "tool_used": True,
@@ -884,15 +901,16 @@ def synthesis(state: RAGState) -> RAGState:
         "evidence_relevance": "strong" if has_docs else "none",
         "evidence_answerability": "partial" if retrieval_status == "partial" else ("sufficient" if has_docs else "none"),
         "evidence_confidence": None,
-        "route": "answer" if has_docs else (hitl_route or "no_knowledge"),
+        "route": route,
         "hitl_prompt": hitl_prompt,
         "hitl_options": hitl_options,
+        "coverage_gap_questions": coverage_gap_questions,
     }
 
     return {
         "docs": deduped,
         "context": context,
-        "route": "answer" if has_docs else (hitl_route or "no_knowledge"),
+        "route": route,
         "retrieval_status": retrieval_status,
         "retrieval_outcome": outcome_for_status(retrieval_status).value,
         "hitl_prompt": hitl_prompt,
