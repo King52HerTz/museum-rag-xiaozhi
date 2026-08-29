@@ -6,6 +6,8 @@
 
 !.gitignore
 !README.md
+!start_museum_rag.ps1
+!start_museum_rag.cmd
 !STAGE_0_BASELINE.md
 !UPSTREAM_MANIFEST.yaml
 !UPSTREAM_SYNC_POLICY.md
@@ -16,6 +18,7 @@
 !STAGE_3_INTEGRATION_SMOKE.md
 !STAGE_4_XIAOZHI_LOCAL_SERVICE.md
 !STAGE_8_RAG_AUDIT.md
+!STAGE_9_MAWANGDUI_UPSTREAM.md
 
 # Keep RAG system code
 !/rag/

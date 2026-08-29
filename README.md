@@ -46,7 +46,7 @@ POST /api/museum/query
 Authorization: Bearer <BRIDGE_API_KEY>
 ```
 
-- 支持管理端免登录跳转到 RAG 工作台。
+- 管理端日常资料操作不需要再次登录；高级维护工作台提供可选的免登录跳转。
 
 ### 智博导览管理平台
 
@@ -54,7 +54,7 @@ Authorization: Bearer <BRIDGE_API_KEY>
 - 新增“博物馆知识库”页面入口。
 - 后端新增 `museum/rag` 桥接 Controller / Service。
 - 管理端可直接上传资料、查看异步处理进度、删除资料并进行检索测试。
-- SuperMew 工作台仍保留免登录入口，作为高级维护和故障排查入口。
+- SuperMew 工作台仍保留为高级维护和故障排查入口；免登录失败时不会回退到第二个登录页面。
 - 管理端已内置“导览问答测试”控制台，可直接调用 `manager-api /museum/rag/query`，由管理端后端桥接到 SuperMew `POST /api/museum/query`。
 
 ### 小智服务端插件
@@ -81,7 +81,7 @@ xiaozhi-server/plugins_func/functions/search_museum_knowledge.py
 
 ## 本地运行说明
 
-本仓库没有提交本地真实配置文件、模型文件、文档资料和启动脚本。运行前需要根据自己的环境补充：
+本仓库不提交本地真实配置文件、模型文件和文档资料；启动脚本只负责编排本地服务，不包含敏感值。运行前需要根据自己的环境补充：
 
 - RAG `.env`
 - 小智管理端数据库 / Redis 配置
@@ -89,7 +89,7 @@ xiaozhi-server/plugins_func/functions/search_museum_knowledge.py
 - 模型或第三方 API Key
 - 本地上传的博物馆资料
 
-建议本地联调端口规划：
+建议本地联调端口规划（请使用源码管理端 `8001`，不要把官方 Docker 页面 `8002` 当作本项目入口）：
 
 ```text
 8000  SuperMew RAG 工作台与后端
@@ -100,6 +100,30 @@ xiaozhi-server/plugins_func/functions/search_museum_knowledge.py
 15432 SuperMew PostgreSQL
 6379  SuperMew Redis
 19530 Milvus
+```
+
+如果本机仍运行官方 `xiaozhi-esp32-server-web` 容器（端口 `8002`），它是未包含本项目博物馆接口的旧版页面，访问 `/museum/rag/*` 会返回 404。启动脚本会让源码管理端 API 复用该官方容器的 MySQL/Redis 数据，因此 `8001` 登录后可以继续看到官方账号、智能体和设备；两套服务不会再使用两套登录数据库。
+
+### Windows 一键启动
+
+在项目根目录双击 `start_museum_rag.cmd`，脚本会启动 Docker 依赖、RAG API、智博导览管理端前后端和小智服务端，并自动打开管理端入口。启动完成后 CMD 窗口会保留结果，按任意键关闭窗口不会停止已经启动的服务：
+
+```text
+http://127.0.0.1:8001/
+```
+
+首次运行如果没有 `manager-api/target/xiaozhi-esp32-api.jar` 或 SuperMew 前端构建产物，脚本会自动执行构建；Java 源码比现有 JAR 更新时也会自动重新打包，避免继续运行旧接口。因此首次启动或代码更新后的启动可能需要更长时间。脚本只读取已运行官方容器的连接配置，不把账号密码、API Key 写入仓库；运行日志保存在 `runtime-logs/museum-startup/logs`。
+
+需要手动启动或跳过某个组件时，也可以在 PowerShell 中执行：
+
+```powershell
+.\start_museum_rag.ps1 -OpenBrowser
+```
+
+如果端口被上一次异常退出的进程占用，可以使用：
+
+```powershell
+.\start_museum_rag.ps1 -ForceRestart -OpenBrowser
 ```
 
 如果需要在 Windows 上启动本地小智语音服务端，还需要确保 Python 能加载 Opus 动态库，否则会出现：
@@ -133,7 +157,7 @@ rag/SuperMew-main/.env.example
 - 上传的测试资料
 - 项目文档和申请书
 - 硬件工程资料
-- 本地启动脚本与运行日志
+- 运行日志和本地运行状态
 
 ## 后续开发方向
 
@@ -147,6 +171,7 @@ rag/SuperMew-main/.env.example
 - [阶段 6：管理端统一知识库资料管理](STAGE_6_MUSEUM_CONSOLE.md)
 - [阶段 7：智博导览设备本地 WebSocket 切换](STAGE_7_SMARTRING_LOCAL_WS.md)
 - [阶段 8：聊天记录中的博物馆知识库调用核验](STAGE_8_RAG_AUDIT.md)
+- [阶段 9：马王堆官方资料库与 SuperMew 上游隔离升级](STAGE_9_MAWANGDUI_UPSTREAM.md)
 
 ## 项目定位
 

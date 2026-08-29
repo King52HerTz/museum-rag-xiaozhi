@@ -7,12 +7,12 @@
           <div class="eyebrow">Museum RAG</div>
           <h1>博物馆知识库</h1>
           <p>
-            在智博导览管理平台内完成资料上传、处理状态查看和检索测试。SuperMew 工作台保留为高级维护入口，
+            日常资料上传、处理状态查看和检索测试都在本页完成，不需要再次登录知识库。SuperMew 工作台仅保留为高级维护入口，
             小智服务端会使用同一套博物馆知识库。
           </p>
           <div class="hero-actions">
             <el-button type="primary" icon="el-icon-right" :loading="workbenchLoading" @click="openWorkbench">
-              进入知识库工作台
+              进入高级维护工作台
             </el-button>
             <el-button icon="el-icon-refresh" @click="fillDemoQuestion">
               使用演示问题
@@ -33,8 +33,8 @@
             <strong>{{ queryForm.exhibition }}</strong>
           </div>
           <div class="status-row">
-            <span>工作台</span>
-            <strong>{{ workbenchUrl }}</strong>
+            <span>日常操作</span>
+            <strong>本页完成，无需二次登录</strong>
           </div>
         </div>
       </section>
@@ -186,7 +186,7 @@
           </div>
 
           <div v-if="queryResult && contexts.length === 0 && !queryLoading" class="empty-result">
-            未检索到相关资料。可以先进入知识库工作台确认资料是否已上传并完成解析。
+            未检索到相关资料。可以先在上方资料列表确认文件是否已完成解析。
           </div>
 
           <div v-if="contexts.length > 0" class="context-list">
@@ -459,15 +459,21 @@ export default {
       Api.museumRag.getWorkbenchLoginUrl(
         (res) => {
           const data = this.unwrap(res);
-          const targetUrl = (data.url || "").trim() || this.workbenchUrl;
+          const targetUrl = data && typeof data.url === "string" ? data.url.trim() : "";
+          if (!targetUrl) {
+            this.workbenchMessage = "未获取到免登录地址，日常操作请继续在本页完成。";
+            this.workbenchLoading = false;
+            this.$message.warning(this.workbenchMessage);
+            return;
+          }
           this.workbenchMessage = "免登录票据已生成，正在打开知识库工作台。";
           this.workbenchLoading = false;
           window.open(targetUrl, "_blank");
         },
         () => {
-          this.workbenchMessage = "免登录失败，已回退到普通工作台入口。";
+          this.workbenchMessage = "知识库工作台免登录失败，日常操作请继续在本页完成。";
           this.workbenchLoading = false;
-          window.open(this.workbenchUrl, "_blank");
+          this.$message.warning(this.workbenchMessage);
         }
       );
     },
