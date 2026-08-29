@@ -43,6 +43,9 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 - 已增加 UTF-8 Markdown 的上传校验、解析、索引和文档类型显示，保持 PDF、DOCX、
   Excel 等已有格式兼容。
 - 该改动已提交为 `3e90d6e feat(museum): support native markdown corpus uploads`。
+- 评测适配器已增加可选的用例间等待参数，并将文本文件换行规范化后再计算 corpus/source
+  fingerprint，避免 Windows 的 CRLF 与 Linux 的 LF 造成虚假的基线不一致；该改动已提交为
+  `4a447c9 feat(evaluation): pace live model probes`。
 
 ## 验证结果
 
@@ -73,6 +76,10 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 - 同批次的应用层 live RAG 评测生成了 10 条 Observation，但外部模型接口出现
   `MODEL_RATE_LIMITED` 和一次超时，导致报告被标记为未通过；该结果只能说明当前模型配额/
   限流条件不足，不能据此否定已经通过的向量召回对比，也不能作为发布质量结论。
+- 为排除“连续请求过快”这一因素，随后使用同一隔离索引运行了 2 条应用层探针，并设置
+  `--inter-case-delay-seconds 10`；两条仍均返回 `MODEL_RATE_LIMITED`，说明当前阻断更可能是
+  模型供应商配置、部署或配额问题，而不是评测用例间隔。脱敏 Observation、Report 和 Markdown
+  报告保存在本机 `runtime-logs/corpus-build` 忽略目录，未写入回答原文、密钥或原始异常。
 - Windows 直接启动新版 API 仍会在上游 Skill Registry 的
   `O_DIRECTORY` / `O_NOFOLLOW` POSIX 安全文件要求处阻断，因此采用 WSL/Linux 完成了本轮
   导入和检索验证，没有为了本机试跑而绕过安全校验。稳定版恢复后 `/docs` 返回 200，原有
@@ -93,8 +100,9 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 
 隔离 Compose/环境模板已经在升级分支准备完成，并通过无敏感值的配置校验。后续按资源情况执行：
 
-1. 固定一个可审计的模型配置，处理 `MODEL_RATE_LIMITED`（降低并发/增加退避，或使用已经
-   配置好的其他模型供应商）；密钥只通过本地环境变量提供，不写入仓库。
+1. 先固定一个可审计且确实可调用的模型配置，解决当前 `MODEL_RATE_LIMITED`（核对模型部署、
+   账户配额和 API Key 归属；必要时再评估退避或已配置的其他供应商）。密钥只通过本地环境变量
+   提供，不写入仓库；在模型供应商恢复前，不把 live 评测标记为通过。
 2. 在同一隔离索引上重跑 10 题应用层评测，至少确认路由、答案可回答性、来源证据和错误率，
    再扩充到更大的人工标注集；不能把仅有向量召回的结果当成答案质量。
 3. 只有新版通过答案/证据回归后，才迁移 `/api/museum/query` 兼容接口和小智桥接；在此
