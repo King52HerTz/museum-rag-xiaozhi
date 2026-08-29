@@ -65,6 +65,8 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   预检与桥接契约共 12 项通过。
 - live 评测命令也支持同一个 `--env-file` 参数，并会在加载后端和模型前读取该文件；新增环境
   优先级与缺失文件测试后，升级分支提交为 `25a28af feat(evaluation): reuse external env for live runs`。
+- 当前使用现有稳定配置文件做脱敏预检，必需模型配置为 5/5，桥接密钥已配置；`EVALUATION_MODEL`
+  仍为可选缺省。该检查没有发起模型请求，也没有复制配置文件。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
