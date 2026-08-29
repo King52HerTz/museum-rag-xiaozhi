@@ -89,6 +89,9 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   11 个当前资料可回答、4 个资料缺口、1 个明确无知识问题，覆盖单事实、单对象多属性、跨文档
   比较、时间状态、名称混淆、保守拒答和安全边界。标注集提交为
   `bb412ea feat(evaluation): add mawangdui annotated dataset`，暂不替换发布门禁。
+- 已同步更新升级分支桥接 Runbook，补充 DeepSeek `function_calling` 兼容性、CPU 嵌入预热、
+  评测结果边界和 `BRIDGE_API_KEY` 占位时的阻断条件，提交为
+  `9c3ff85 docs(bridge): record DeepSeek evaluation prerequisites`。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
