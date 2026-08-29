@@ -80,6 +80,11 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   仍保留 `clarify`、`scope_select` 和 `no_knowledge`。新增回归用例后，相关测试共 82 项通过，
   修复提交为 `5e9a3cc fix(rag): keep partial sub-agent evidence for synthesis`，离线基线随之
   更新为 `31060fa chore(evaluation): refresh baseline after routing fix`。
+- 针对“同一件文物的多个属性”增加了保守的本地快速判定：只有出现单一所属关系、一个连接词、
+  一个疑问词且没有比较/多步骤表达时才跳过复杂度模型；跨对象、跨文档或多步骤问题仍交给
+  复杂度规划器。新增边界测试后，相关回归共 83 项通过，提交为
+  `744176d perf(rag): fast-path single-entity attribute queries`，离线基线更新为
+  `2a557d6 chore(evaluation): refresh baseline after fast path`。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
@@ -122,13 +127,14 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 - 使用本机专用 `.env` 中的 DeepSeek 配置和上述兼容层重跑了同一套 10 题应用层评测：此前的
   `PROVIDER_REQUEST_INVALID` 已消失；开启 CPU 嵌入模型预热并将嵌入超时设为 60 秒后，10/10
   个用例都完成了实际召回和模型流程，生成、裁判、检索三类 provider failure rate 均为 0，
-  `route_accuracy=1.0`、`complexity_accuracy=1.0`、`document_recall_at_10=1.0`，
-  `case_pass_rate=0.8`、`outcome_accuracy=0.8`，平均耗时约 5.49 秒、P95 约 12.10 秒。
-  两个未通过用例是 `t_shape_worlds` 和 `half_box_qin`：当前官方资料能支撑带限定条件的
-  部分回答，但没有覆盖问题要求的全部细节，因此保留 `INSUFFICIENT_EVIDENCE`，不能为了过门禁
-  把它们改判为完整可回答。新增子问题路由修复后，复杂流程会保留这些部分证据交给 synthesis，
-  评测报告仍未达到发布门槛。脱敏 Observation、Report 和 Markdown 报告保存在本机
-  `runtime-logs/corpus-build` 忽略目录。
+  `route_accuracy=1.0`、`complexity_accuracy=0.9`、`document_recall_at_10=1.0`，
+  `case_pass_rate=0.6`、`outcome_accuracy=0.7`，平均耗时约 4.54 秒、P95 约 7.50 秒。
+  三个未通过用例是 `t_shape_worlds`、`lacquer_silk_counts` 和 `half_box_qin`：当前官方资料
+  能支撑带限定条件的部分回答，但没有覆盖问题要求的全部细节，因此保留
+  `INSUFFICIENT_EVIDENCE`，不能为了过门禁把它们改判为完整可回答。另有一个黑地彩绘棺问题
+  被模型随机判为复杂，已用上述保守快速判定降低此类波动，但尚未重新消耗外部配额进行全量
+  live 验证。评测报告仍未达到发布门槛；脱敏 Observation、Report 和 Markdown 报告保存在
+  本机 `runtime-logs/corpus-build` 忽略目录。
 
 ## 当前边界
 
