@@ -53,6 +53,7 @@ class RagCoreCompatibilityTests(unittest.TestCase):
             result = pipeline.run_rag_graph("湖南省博物馆是什么")
 
         self.assertEqual("answerable", result["retrieval_status"])
+        self.assertEqual("ANSWERABLE", result["retrieval_outcome"])
         self.assertEqual("answer", result["route"])
         self.assertEqual(docs, result["docs"])
 
@@ -64,6 +65,7 @@ class RagCoreCompatibilityTests(unittest.TestCase):
             result = pipeline.run_rag_graph("资料中没有的问题")
 
         self.assertEqual("no_knowledge", result["retrieval_status"])
+        self.assertEqual("NO_KNOWLEDGE", result["retrieval_outcome"])
         self.assertEqual("no_knowledge", result["route"])
         self.assertEqual([], result["docs"])
 
