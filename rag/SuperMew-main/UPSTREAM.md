@@ -33,6 +33,10 @@
 - 第一批结果语义迁移已完成：新增 `RetrievalOutcome` 及缺口提示工具，并将结果写入兼容的
   `rag_trace.retrieval_outcome` 字段；未替换检索流程、桥接响应或小智插件协议。该批次提交为
   `e59cde2 feat(rag): expose stable retrieval outcomes`，当前稳定副本测试为 21 passed、11 个子测试通过。
+- 第二批证据上下文预算迁移已完成：评分器使用独立的紧凑证据包，回答 Agent 使用有上限且
+  引用编号稳定的证据包；发生省略或截断时记录计数并提示回答仅使用已展示片段。该批次提交为
+  `aeb5bd8 feat(rag): bound evidence context`，没有改变上传、`/api/museum/query` 或设备协议，
+  当前稳定副本测试为 24 passed、11 个子测试通过。
 
 ## 本地必须保留的功能
 
