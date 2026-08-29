@@ -9,6 +9,7 @@ from backend.indexing.embedding import embedding_service as _embedding_service
 from backend.indexing.parent_chunk_store import ParentChunkStore
 from langchain.chat_models import init_chat_model
 from pydantic import BaseModel, Field
+from backend.rag.structured_output import with_structured_output
 
 
 def _optional_env(name: str) -> Optional[str]:
@@ -408,7 +409,11 @@ def rewrite_query_once(query: str) -> dict:
     if not model:
         raise RuntimeError("FAST_MODEL is required for query rewriting")
 
-    result = model.with_structured_output(RewritePlan).invoke(
+    result = with_structured_output(
+        model,
+        RewritePlan,
+        base_url=BASE_URL,
+    ).invoke(
         [{"role": "user", "content": REWRITE_PROMPT.format(query=query)}]
     )
     method = result.method

@@ -17,6 +17,7 @@ from backend.rag.utils import (
     dedupe_documents,
     retrieval_trace_fields,
 )
+from backend.rag.structured_output import with_structured_output
 
 if TYPE_CHECKING:
     from backend.chat.request_context import ChatRequestContext
@@ -430,7 +431,11 @@ def grade_documents_node(state: RAGState) -> RAGState:
         question = state["question"]
         context = state.get("context", "")
         prompt = EVIDENCE_GRADE_PROMPT.format(question=question, context=context)
-        grade = grader.with_structured_output(EvidenceGrade).invoke(
+        grade = with_structured_output(
+            grader,
+            EvidenceGrade,
+            base_url=BASE_URL,
+        ).invoke(
             [{"role": "user", "content": prompt}]
         )
 
@@ -697,7 +702,11 @@ def classify_complexity(state: RAGState) -> RAGState:
         raise RuntimeError("FAST_MODEL is required for complexity planning")
 
     prompt = COMPLEXITY_PROMPT.format(question=question)
-    result = model.with_structured_output(ComplexityResult).invoke(
+    result = with_structured_output(
+        model,
+        ComplexityResult,
+        base_url=BASE_URL,
+    ).invoke(
         [{"role": "user", "content": prompt}]
     )
     complexity = (result.complexity or "simple").strip().lower()

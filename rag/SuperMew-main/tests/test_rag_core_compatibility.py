@@ -9,7 +9,7 @@ class _FakeStructuredModel:
     def __init__(self, value):
         self.value = value
 
-    def with_structured_output(self, _schema):
+    def with_structured_output(self, _schema, **_kwargs):
         return self
 
     def invoke(self, _messages):
@@ -32,7 +32,7 @@ class RagCoreCompatibilityTests(unittest.TestCase):
 
     def test_upgraded_pipeline_returns_supported_evidence(self):
         class FakeGrader:
-            def with_structured_output(self, _schema):
+            def with_structured_output(self, _schema, **_kwargs):
                 return self
 
             def invoke(self, _messages):
