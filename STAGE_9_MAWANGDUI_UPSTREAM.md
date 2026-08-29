@@ -71,6 +71,9 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   评测裁判在 DeepSeek endpoint 上统一使用 LangChain `function_calling`，其它模型仍保留默认
   策略；适配代码提交为 `bfdd26a fix(provider): use function calling for DeepSeek schemas`，
   新增兼容测试后定向测试 36 项全部通过，`ruff` 与 `compileall` 均通过。
+- 因 RAG 源码指纹按设计发生变化，已按仓库既定命令重建离线 `baseline_v1.json`；模型预检、
+  桥接契约、CLI 评测与适配器回归共 39 项通过（仅保留上游依赖弃用提示），新基线提交为
+  `5ad9216 chore(evaluation): refresh offline rag baseline`。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
