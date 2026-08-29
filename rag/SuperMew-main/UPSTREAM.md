@@ -30,6 +30,9 @@
   `O_DIRECTORY`/`O_NOFOLLOW`，沙箱测试还依赖 Unix `resource` 模块。
 - 可在本机运行的 RAG、桥接、文档加载、Provider 和结构化输出测试结果为：53 passed、10 个子测试通过。
 - 因此下一批迁移必须按模块边界进行，不能把上游目录整体复制到 `SuperMew-main`。
+- 第一批结果语义迁移已完成：新增 `RetrievalOutcome` 及缺口提示工具，并将结果写入兼容的
+  `rag_trace.retrieval_outcome` 字段；未替换检索流程、桥接响应或小智插件协议。该批次提交为
+  `e59cde2 feat(rag): expose stable retrieval outcomes`，当前稳定副本测试为 21 passed、11 个子测试通过。
 
 ## 本地必须保留的功能
 
