@@ -1,6 +1,6 @@
 # 阶段 9：马王堆官方资料库与 SuperMew 上游隔离升级
 
-更新时间：2026-08-29
+更新时间：2026-08-30
 
 ## 本阶段目标
 
@@ -67,6 +67,10 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   优先级与缺失文件测试后，升级分支提交为 `25a28af feat(evaluation): reuse external env for live runs`。
 - 当前使用现有稳定配置文件做脱敏预检，必需模型配置为 5/5，桥接密钥已配置；`EVALUATION_MODEL`
   仍为可选缺省。该检查没有发起模型请求，也没有复制配置文件。
+- 已针对 DeepSeek OpenAI 兼容接口补充结构化输出适配：证据评分、复杂度规划、查询重写和
+  评测裁判在 DeepSeek endpoint 上统一使用 LangChain `function_calling`，其它模型仍保留默认
+  策略；适配代码提交为 `bfdd26a fix(provider): use function calling for DeepSeek schemas`，
+  新增兼容测试后定向测试 36 项全部通过，`ruff` 与 `compileall` 均通过。
 - 新版完整测试集在 Windows 收集阶段受 POSIX 专用依赖限制，涉及
   `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource`；这不是资料或桥接代码失败，
  也没有因此修改稳定版代码。使用 WSL/Linux 运行完整上游测试后，结果为
@@ -106,6 +110,14 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
   `O_DIRECTORY` / `O_NOFOLLOW` POSIX 安全文件要求处阻断，因此采用 WSL/Linux 完成了本轮
   导入和检索验证，没有为了本机试跑而绕过安全校验。稳定版恢复后 `/docs` 返回 200，原有
   10 条验收问题再次全部命中预期来源。
+- 使用本机专用 `.env` 中的 DeepSeek 配置和上述兼容层重跑了同一套 10 题应用层评测：此前的
+  `PROVIDER_REQUEST_INVALID` 已消失，9/10 个用例完成了实际召回与模型流程，生成阶段和裁判
+  阶段的 provider failure rate 均为 0；但其中 `t_shape_worlds` 在复杂问题流程中仍超时，
+  `plain_silk_weight` 被当前证据评分路由为 `no_knowledge`，另有 1 个用例进入澄清，最终
+  `case_pass_rate=0.4`、`route_accuracy=0.7`、`complexity_accuracy=0.8`、
+  `document_recall_at_10=0.8`，所以报告仍未通过发布门禁。提高模型超时上限后重跑，超时用例仍然
+  相同；该结果用于定位复杂问题/资料覆盖和门禁标注问题，不能宣称答案质量已经达标。脱敏
+  Observation、Report 和 Markdown 报告保存在本机 `runtime-logs/corpus-build` 忽略目录。
 
 ## 当前边界
 
@@ -125,16 +137,12 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 
 隔离 Compose/环境模板已经在升级分支准备完成，并通过无敏感值的配置校验。后续按资源情况执行：
 
-1. 先固定一个可审计且确实可调用的模型配置，解决当前 `MODEL_RATE_LIMITED`（当前现有配置为
-   Ark/Doubao，若改用 DeepSeek 需在 SuperMew 本机 env 中单独配置；小智管理端的模型配置不会
-   自动同步）。核对模型部署、账户配额和 API Key 归属；必要时再评估退避或已配置的其他供应商。
-   密钥只通过本地环境变量
-   提供，不写入仓库；可先运行升级分支的
-   `scripts/check_model_provider_config.py --env-file <已有本机 .env>`，live 评测再使用
-   `scripts/evaluate_rag.py run --env-file <升级环境 .env>`；在预检通过
-   前不把 live 评测标记为通过。
-2. 在同一隔离索引上重跑 10 题应用层评测，至少确认路由、答案可回答性、来源证据和错误率，
-   再扩充到更大的人工标注集；不能把仅有向量召回的结果当成答案质量。
+1. 保持 DeepSeek 配置只存在本机专用 `.env`；继续定位复杂问题的超时、素纱单衣的证据评分
+   误判和辛追数字人问题的澄清策略。每次调整后重跑同一 10 题，先达到 provider failure rate
+   为 0，再评估路由、答案可回答性、来源证据和错误率；不能把仅有向量召回的结果当成答案质量。
+2. 修订并扩充人工标注集：为每个问题补充 reference answer、required claims 和允许的
+   证据边界，区分“知识库没有答案”和“召回到了但评分器过于保守”，再扩充到至少 200 条
+   覆盖单事实、多跳、歧义/HITL、无知识与来源冲突的用例。
 3. 在通过回归前，只在升级分支用正确的 `BRIDGE_API_KEY` 做接口级检索冒烟，确认 trace 和
    来源契约；不要把升级 API 接入设备。
 4. 只有新版通过答案/证据回归后，才把该桥接接口迁移到稳定部署并切换小智插件的 `base_url`；
