@@ -27,6 +27,9 @@ class RagTraceFields(StrictSchema):
     tool_used: Optional[bool] = None
     tool_name: Optional[str] = None
     query: Optional[str] = None
+    retrieval_outcome: Optional[
+        Literal["ANSWERABLE", "NO_KNOWLEDGE", "INSUFFICIENT_EVIDENCE"]
+    ] = None
 
     # 本地现有的 Step-back / HyDE 字段
     expanded_query: Optional[str] = None

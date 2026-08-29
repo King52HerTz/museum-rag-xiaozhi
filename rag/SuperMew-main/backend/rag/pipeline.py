@@ -18,6 +18,7 @@ from backend.rag.utils import (
     retrieval_trace_fields,
 )
 from backend.rag.structured_output import with_structured_output
+from backend.rag.outcomes import outcome_for_status
 
 if TYPE_CHECKING:
     from backend.chat.request_context import ChatRequestContext
@@ -129,6 +130,7 @@ class RAGState(TypedDict):
     docs: List[dict]
     route: Optional[str]
     retrieval_status: Optional[str]
+    retrieval_outcome: Optional[str]
     evidence_relevance: Optional[str]
     evidence_answerability: Optional[str]
     evidence_ambiguity: Optional[str]
@@ -242,6 +244,7 @@ def _initial_state(
         "docs": [],
         "route": None,
         "retrieval_status": None,
+        "retrieval_outcome": None,
         "evidence_relevance": None,
         "evidence_answerability": None,
         "evidence_ambiguity": None,
@@ -407,6 +410,7 @@ def _grade_update(grade: EvidenceGrade, route: str) -> dict:
     hitl_prompt = _default_hitl_prompt(route, grade) if route in ("clarify", "scope_select") else ""
     return {
         "retrieval_status": status,
+        "retrieval_outcome": outcome_for_status(status).value,
         "evidence_relevance": grade.relevance,
         "evidence_answerability": grade.answerability,
         "evidence_ambiguity": grade.ambiguity,
@@ -459,6 +463,7 @@ def grade_documents_node(state: RAGState) -> RAGState:
     update = {
         "route": route,
         "retrieval_status": grade_update["retrieval_status"],
+        "retrieval_outcome": grade_update["retrieval_outcome"],
         "evidence_relevance": grade.relevance,
         "evidence_answerability": grade.answerability,
         "evidence_ambiguity": grade.ambiguity,
@@ -487,12 +492,14 @@ def rewrite_question_node(state: RAGState) -> RAGState:
         rag_trace.update({
             "retrieval_status": "no_knowledge",
             "route": "no_knowledge",
+            "retrieval_outcome": outcome_for_status("no_knowledge").value,
             "evidence_reason": "rewrite_budget_exhausted",
         })
         _emit(state, "⛔", "改写预算已用完，停止检索")
         return {
             "route": "no_knowledge",
             "retrieval_status": "no_knowledge",
+            "retrieval_outcome": outcome_for_status("no_knowledge").value,
             "docs": [],
             "context": "",
             "rag_trace": rag_trace,
@@ -848,6 +855,7 @@ def synthesis(state: RAGState) -> RAGState:
         "synthesis_merged_count": len(all_docs),
         "sub_traces": sub_traces,
         "retrieval_status": retrieval_status,
+        "retrieval_outcome": outcome_for_status(retrieval_status).value,
         "evidence_relevance": "strong" if has_docs else "none",
         "evidence_answerability": "partial" if retrieval_status == "partial" else ("sufficient" if has_docs else "none"),
         "evidence_confidence": None,
@@ -861,6 +869,7 @@ def synthesis(state: RAGState) -> RAGState:
         "context": context,
         "route": "answer" if has_docs else (hitl_route or "no_knowledge"),
         "retrieval_status": retrieval_status,
+        "retrieval_outcome": outcome_for_status(retrieval_status).value,
         "hitl_prompt": hitl_prompt,
         "hitl_options": hitl_options,
         "rag_trace": rag_trace,
