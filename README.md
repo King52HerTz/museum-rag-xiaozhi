@@ -177,6 +177,7 @@ rag/SuperMew-main/.env.example
 - [阶段 12：RAG 结果可核验面板](STAGE_12_RAG_AUDIT_PANEL.md)
 - [阶段 13：桥接层传递 RAG 结果语义](STAGE_13_BRIDGE_RAG_OUTCOME.md)
 - [阶段 14：马王堆评测集扩展与 Windows 兼容性门禁](STAGE_14_MAWANGDUI_EVAL_GATE.md)
+- [阶段 15：马王堆 200 条评测集与真实质量门禁](STAGE_15_MAWANGDUI_EVAL.md)
 
 ## 项目定位
 
