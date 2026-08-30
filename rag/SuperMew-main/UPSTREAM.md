@@ -55,6 +55,9 @@
   同时保留召回结果回退；追踪 Schema 和前端面板新增错误码与可重试标记。该批次提交为
   `b08d53c feat(rag): redact rerank provider failures`，完整测试为 37 passed、11 个子测试通过，
   前端构建和编译检查均通过。
+- 第八批博物馆桥接失败安全契约已完成：`/api/museum/query` 的异常响应只保留脱敏错误码和提示，
+  日志不再记录完整堆栈，原有 `MUSEUM_QUERY_FAILED` 响应结构保持不变。该批次提交为
+  `707a917 fix(bridge): redact museum query failures`，完整测试为 38 passed、11 个子测试通过。
 
 ## 本地必须保留的功能
 

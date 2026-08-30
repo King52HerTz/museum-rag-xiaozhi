@@ -41,6 +41,10 @@ Linux 的 `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource` 支持。
 `b08d53c feat(rag): redact rerank provider failures`，完整测试更新为 37 passed、11 个子测试通过，
 前端构建和编译检查均通过。
 
+第八批补充博物馆桥接失败安全契约：`/api/museum/query` 的异常响应只保留脱敏错误码和提示，
+日志不再记录完整堆栈，同时保持 `MUSEUM_QUERY_FAILED` 与原有响应结构。提交为
+`707a917 fix(bridge): redact museum query failures`，完整测试更新为 38 passed、11 个子测试通过。
+
 ## 初次审计记录（2026-08-13）
 
 以下内容保留首次 ZIP/快照审计时的来源和边界，作为历史记录；本文件顶部的
