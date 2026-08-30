@@ -113,6 +113,22 @@ def _trace_summary(trace: dict[str, Any]) -> str:
     )
 
 
+def _with_retrieval_outcome(contexts: list[MuseumContext], trace: dict[str, Any]) -> dict[str, Any]:
+    """Add a stable outcome so downstream callers can distinguish empty from degraded retrieval."""
+    enriched = dict(trace)
+    degraded = trace.get("retrieval_degraded_code") or trace.get("provider_error_code")
+    if degraded:
+        enriched["retrieval_outcome"] = "INSUFFICIENT_EVIDENCE"
+        enriched["retrieval_status"] = "insufficient_evidence"
+    elif contexts:
+        enriched["retrieval_outcome"] = "ANSWERABLE"
+        enriched["retrieval_status"] = "answerable"
+    else:
+        enriched["retrieval_outcome"] = "NO_KNOWLEDGE"
+        enriched["retrieval_status"] = "no_knowledge"
+    return enriched
+
+
 def _question_preview(question: str, limit: int = 48) -> str:
     text = str(question or "").strip().replace("\n", " ")
     if len(text) <= limit:
@@ -225,6 +241,7 @@ async def museum_query(
         ]
         meta = result.get("meta", {}) if isinstance(result, dict) else {}
         trace = retrieval_trace_fields(meta) if isinstance(meta, dict) else {}
+        trace = _with_retrieval_outcome(contexts, trace)
 
         if not contexts:
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
@@ -235,9 +252,14 @@ async def museum_query(
                 0,
                 _trace_summary(trace),
             )
+            message = (
+                "检索服务暂时不可用，当前无法确认知识库是否有答案"
+                if trace.get("retrieval_outcome") == "INSUFFICIENT_EVIDENCE"
+                else "未检索到相关资料"
+            )
             return _build_response(
                 code=0,
-                message="未检索到相关资料",
+                message=message,
                 query=query,
                 contexts=[],
                 trace=trace if request.need_trace else {},

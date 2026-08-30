@@ -82,12 +82,23 @@ def _trace_digest(result: dict) -> str:
 
 def _build_llm_context(question: str, result: dict) -> str:
     contexts = result.get("contexts") or []
-    if not contexts:
+    trace = result.get("trace") or {}
+    if not isinstance(trace, dict):
+        trace = {}
+    outcome = _safe_text(trace.get("retrieval_outcome"))
+    if not contexts or outcome == "NO_KNOWLEDGE":
         return (
             "你是“智博导览助手”，一名专业、亲切的博物馆语音导览员。\n"
             f"游客问题：{question}\n"
             "博物馆知识库没有检索到足够相关的资料。\n"
             "请直接、自然地告诉游客：我暂时没有查到准确资料，可以换一种问法，或询问其他展品。"
+        )
+
+    evidence_notice = ""
+    if outcome == "INSUFFICIENT_EVIDENCE":
+        evidence_notice = (
+            "当前检索服务存在降级或证据覆盖缺口。只能回答下面片段明确支持的内容；"
+            "如果问题要求的细节不在片段中，请明确说明资料不足，不要自行补全。\n\n"
         )
 
     lines = [
@@ -104,8 +115,18 @@ def _build_llm_context(question: str, result: dict) -> str:
         "",
         f"游客问题：{question}",
         "",
-        "博物馆知识库检索结果：",
     ]
+
+    if evidence_notice:
+        lines.append(evidence_notice.rstrip())
+
+    coverage_gaps = [
+        _safe_text(item) for item in (trace.get("coverage_gap_questions") or []) if _safe_text(item)
+    ]
+    if coverage_gaps:
+        lines.append("证据覆盖缺口（不要猜测）：" + "；".join(coverage_gaps))
+
+    lines.append("博物馆知识库检索结果：")
 
     for i, item in enumerate(contexts[:5], start=1):
         source = _safe_text(item.get("source") or item.get("title"), "未知来源")
