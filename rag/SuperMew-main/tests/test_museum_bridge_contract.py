@@ -3,6 +3,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from fastapi import HTTPException
 from pydantic import ValidationError
 
 from backend.api.resources import is_supported_document
@@ -175,6 +176,23 @@ class MuseumBridgeContractTests(unittest.TestCase):
         self.assertEqual("未检索到相关资料", response.message)
         self.assertEqual([], response.contexts)
         self.assertEqual({}, response.trace)
+
+    def test_query_failure_redacts_provider_details(self):
+        request = museum.MuseumQueryRequest(question="黑地彩绘棺的尺寸？")
+        http_request = SimpleNamespace(state=SimpleNamespace(bridge_trace_id="trace-error"), headers={})
+
+        with patch.object(
+            museum.document_profile_store,
+            "find_filenames",
+            side_effect=RuntimeError("provider-token-redacted"),
+        ):
+            with self.assertRaises(HTTPException) as context:
+                asyncio.run(museum.museum_query(http_request, request))
+
+        detail = context.exception.detail
+        self.assertEqual("MUSEUM_QUERY_FAILED", detail["error_code"])
+        self.assertEqual("[INTERNAL_ERROR] 服务暂时不可用，请稍后重试。", detail["details"][0])
+        self.assertNotIn("provider-token-redacted", str(detail))
 
 
 if __name__ == "__main__":

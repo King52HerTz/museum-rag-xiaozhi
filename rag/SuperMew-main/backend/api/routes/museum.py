@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from backend.api.resources import document_profile_store
 from backend.infra.auth import verify_bridge_api_key
+from backend.infra.provider_errors import classify_provider_error
 from backend.rag.utils import retrieve_documents, retrieval_trace_fields
 
 router = APIRouter(prefix="/api/museum", tags=["museum"])
@@ -259,11 +260,13 @@ async def museum_query(
         )
     except Exception as exc:
         elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-        logger.exception(
-            "museum bridge query failed | trace_id=%s | elapsed_ms=%s | error_type=%s",
+        public_error = classify_provider_error(exc)
+        logger.error(
+            "museum bridge query failed | trace_id=%s | elapsed_ms=%s | error_type=%s | error_code=%s",
             trace_id or "-",
             elapsed_ms,
             type(exc).__name__,
+            public_error.code,
         )
         raise HTTPException(
             status_code=500,
@@ -274,6 +277,6 @@ async def museum_query(
                 "contexts": [],
                 "trace": trace if request.need_trace else {},
                 "error_code": "MUSEUM_QUERY_FAILED",
-                "details": [str(exc)],
+                "details": [public_error.detail],
             },
         ) from exc
