@@ -6,6 +6,21 @@
         <div class="trace-line">
           工具：{{ msg.ragTrace.tool_used ? msg.ragTrace.tool_name : '未使用' }}
         </div>
+        <div v-if="msg.ragTrace.retrieval_outcome" class="trace-line">
+          RAG结果：{{ formatRetrievalOutcome(msg.ragTrace.retrieval_outcome) }}
+        </div>
+        <div v-if="msg.ragTrace.retrieval_status" class="trace-line">
+          检索状态：{{ msg.ragTrace.retrieval_status }}
+        </div>
+        <div v-if="msg.ragTrace.route" class="trace-line">
+          最终路由：{{ msg.ragTrace.route }}
+        </div>
+        <div v-if="msg.ragTrace.retrieval_degraded_code" class="trace-line">
+          检索降级码：{{ msg.ragTrace.retrieval_degraded_code }}
+        </div>
+        <div v-if="msg.ragTrace.provider_error_code" class="trace-line">
+          Provider错误码：{{ msg.ragTrace.provider_error_code }}
+        </div>
         <div v-if="msg.ragTrace.retrieval_stage" class="trace-line">
           检索阶段：{{ msg.ragTrace.retrieval_stage }}
         </div>
@@ -114,6 +129,14 @@
         <div v-if="msg.ragTrace.synthesis_merged_count" class="trace-line">
           合成合并文档数：{{ msg.ragTrace.synthesis_merged_count }}
         </div>
+        <div v-if="msg.ragTrace.coverage_gap_questions && msg.ragTrace.coverage_gap_questions.length" class="trace-line trace-coverage-gap">
+          <div>证据覆盖缺口：</div>
+          <ul class="trace-sub-qs-list">
+            <li v-for="(question, gapIndex) in msg.ragTrace.coverage_gap_questions" :key="gapIndex">
+              {{ question }}
+            </li>
+          </ul>
+        </div>
         
         <!-- 子 Agent 检索详情（可折叠） -->
         <div v-if="msg.ragTrace.sub_traces && msg.ragTrace.sub_traces.length" class="trace-sub-traces">
@@ -201,6 +224,15 @@ const formatCandidateKLabel = (trace: RagTrace) => {
     return `Milvus 候选池：${k}（top_k × ${multiplier}）`;
   }
   return `Milvus 候选池：${k}`;
+};
+
+const formatRetrievalOutcome = (outcome: string) => {
+  const labels: Record<string, string> = {
+    ANSWERABLE: '证据足够，可回答',
+    NO_KNOWLEDGE: '知识库无相关资料',
+    INSUFFICIENT_EVIDENCE: '证据不足或检索降级',
+  };
+  return labels[outcome] || outcome;
 };
 
 const hasRetrievalFunnel = (trace: RagTrace) => {

@@ -9,6 +9,11 @@ export interface RetrievedChunk {
 export interface RagTrace {
   tool_used?: boolean;
   tool_name?: string;
+  retrieval_outcome?: 'ANSWERABLE' | 'NO_KNOWLEDGE' | 'INSUFFICIENT_EVIDENCE' | string;
+  retrieval_status?: string;
+  route?: string;
+  retrieval_degraded_code?: string;
+  provider_error_code?: string;
   retrieval_stage?: string;
   grade_score?: number;
   grade_route?: string;
@@ -38,6 +43,8 @@ export interface RagTrace {
   rerank_error?: string;
   rerank_error_code?: string;
   rerank_retryable?: boolean | null;
+  coverage_gap_codes?: string[];
+  coverage_gap_questions?: string[];
   expansion_type?: string;
   step_back_question?: string;
   expanded_query?: string;
