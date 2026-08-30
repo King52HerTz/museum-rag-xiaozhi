@@ -172,6 +172,7 @@ rag/SuperMew-main/.env.example
 - [阶段 7：智博导览设备本地 WebSocket 切换](STAGE_7_SMARTRING_LOCAL_WS.md)
 - [阶段 8：聊天记录中的博物馆知识库调用核验](STAGE_8_RAG_AUDIT.md)
 - [阶段 9：马王堆官方资料库与 SuperMew 上游隔离升级](STAGE_9_MAWANGDUI_UPSTREAM.md)
+- [阶段 10：RAG 精排 Provider 安全与可观测性](STAGE_10_RAG_PROVIDER_SAFETY.md)
 
 ## 项目定位
 

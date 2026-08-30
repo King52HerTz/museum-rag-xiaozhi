@@ -36,6 +36,11 @@ Linux 的 `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource` 支持。
 持久化笔记的二次模型请求。提交为 `1abaf07 feat(chat): normalize provider errors`，完整测试更新为
 34 passed、11 个子测试通过。
 
+第七批补充精排 Provider 安全与可观测性：精排 HTTP 错误、请求异常和空响应不再写入供应商原始内容，
+统一记录安全错误码并保留召回回退；聊天追踪 Schema 和前端面板同步显示错误码及可重试标记。提交为
+`b08d53c feat(rag): redact rerank provider failures`，完整测试更新为 37 passed、11 个子测试通过，
+前端构建和编译检查均通过。
+
 ## 初次审计记录（2026-08-13）
 
 以下内容保留首次 ZIP/快照审计时的来源和边界，作为历史记录；本文件顶部的
