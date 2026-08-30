@@ -67,6 +67,9 @@ RERANK_MIN_SCORE = _read_float_env("RERANK_MIN_SCORE", 0.0)
 RETRIEVAL_TRACE_FIELDS = (
     "retrieval_pipeline",
     "retrieval_mode",
+    "retrieval_degraded_code",
+    "provider_error_code",
+    "provider_error_stage",
     "candidate_k",
     "candidate_k_source",
     "candidate_k_config_error",
@@ -572,6 +575,9 @@ def retrieve_documents(
                 "rerank_error": "embedding_failed",
                 "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
                 "retrieval_mode": "failed",
+                "retrieval_degraded_code": "EMBEDDING_UNAVAILABLE",
+                "provider_error_code": "EMBEDDING_UNAVAILABLE",
+                "provider_error_stage": "embedding",
                 "retrieval_pipeline": "recall_merge_rerank",
                 "candidate_k": candidate_k,
                 **candidate_config,
@@ -620,6 +626,7 @@ def retrieve_documents(
                 candidate_k=candidate_k,
                 candidate_config=candidate_config,
             )
+            result["meta"]["retrieval_degraded_code"] = "HYBRID_RETRIEVAL_FALLBACK"
             result["meta"].update(extra_trace)
             return result
         except Exception:
@@ -633,6 +640,9 @@ def retrieve_documents(
                     "rerank_error": "retrieve_failed",
                     "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
                     "retrieval_mode": "failed",
+                    "retrieval_degraded_code": "VECTOR_STORE_UNAVAILABLE",
+                    "provider_error_code": "VECTOR_STORE_UNAVAILABLE",
+                    "provider_error_stage": "retrieval",
                     "retrieval_pipeline": "recall_merge_rerank",
                     "candidate_k": candidate_k,
                     **candidate_config,

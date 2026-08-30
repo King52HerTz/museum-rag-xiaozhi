@@ -85,6 +85,9 @@ class RagTraceFields(StrictSchema):
 
     retrieval_mode: Optional[str] = None
     retrieval_pipeline: Optional[str] = None
+    retrieval_degraded_code: Optional[str] = None
+    provider_error_code: Optional[str] = None
+    provider_error_stage: Optional[str] = None
     candidate_k: Optional[int] = None
     candidate_k_source: Optional[str] = None
     candidate_k_config_error: Optional[str] = None

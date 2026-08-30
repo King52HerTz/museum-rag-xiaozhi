@@ -83,12 +83,13 @@ EVIDENCE_GRADE_PROMPT = (
     "sufficient 表示片段能直接或组合支撑答案。\n"
     "- ambiguity: missing_slot 表示缺少角色名、版本、文件类型、模块名、产品线等关键条件；"
     "multiple_candidates 表示多个候选方向都可能相关；none 表示无明显歧义。\n"
-    "- route 只能选择：answer、rewrite、clarify、scope_select、no_knowledge。\n"
+    "- route 只能选择：answer、rewrite、clarify、scope_select、no_knowledge、insufficient_evidence。\n"
     "  answer: relevance=strong 且 answerability=sufficient。\n"
     "  rewrite: 有相关信号，但像是问法、别名或泛化程度导致证据不足。\n"
     "  clarify: 缺少关键条件，需要用户补充。\n"
     "  scope_select: 多个候选方向都相关，需要用户选择。\n"
     "  no_knowledge: 无召回或主题不相关。\n"
+    "  insufficient_evidence: 检索服务异常，无法确认知识库是否有答案。\n"
     "- 如果 route 是 clarify 或 scope_select，请给 hitl_prompt；如果能列出选项，请给 hitl_options。"
 )
 
@@ -106,7 +107,14 @@ class EvidenceGrade(BaseModel):
         default="none",
         description="问题是否缺条件或存在多个候选方向"
     )
-    route: Literal["answer", "rewrite", "clarify", "scope_select", "no_knowledge"] = Field(
+    route: Literal[
+        "answer",
+        "rewrite",
+        "clarify",
+        "scope_select",
+        "no_knowledge",
+        "insufficient_evidence",
+    ] = Field(
         description="下一步路由"
     )
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -138,6 +146,7 @@ class RAGState(TypedDict):
     route: Optional[str]
     retrieval_status: Optional[str]
     retrieval_outcome: Optional[str]
+    retrieval_degraded_code: Optional[str]
     evidence_relevance: Optional[str]
     evidence_answerability: Optional[str]
     evidence_ambiguity: Optional[str]
@@ -255,6 +264,7 @@ def _initial_state(
         "route": None,
         "retrieval_status": None,
         "retrieval_outcome": None,
+        "retrieval_degraded_code": None,
         "evidence_relevance": None,
         "evidence_answerability": None,
         "evidence_ambiguity": None,
@@ -315,6 +325,7 @@ def retrieve_initial(state: RAGState) -> RAGState:
         "retrieved_chunks": results,
         "initial_retrieved_chunks": results,
         "retrieval_stage": "initial",
+        "retrieval_degraded_code": retrieve_meta.get("retrieval_degraded_code"),
         "complexity": state.get("complexity"),
         "complexity_reason": state.get("complexity_reason"),
         **retrieval_trace_fields(retrieve_meta),
@@ -323,6 +334,7 @@ def retrieve_initial(state: RAGState) -> RAGState:
         "query": query,
         "docs": results,
         "context": context,
+        "retrieval_degraded_code": retrieve_meta.get("retrieval_degraded_code"),
         "rag_trace": rag_trace,
     }
 
@@ -348,6 +360,8 @@ def _retrieval_status_for_route(route: str, grade: EvidenceGrade) -> str:
         return "needs_clarification"
     if route == "scope_select":
         return "needs_scope_selection"
+    if route == "insufficient_evidence":
+        return "insufficient_evidence"
     return "no_knowledge"
 
 
@@ -361,7 +375,16 @@ def _default_hitl_prompt(route: str, grade: EvidenceGrade) -> str:
     return "我找到了相关内容，但证据不足以确定答案。请补充一下你具体想问的条件。"
 
 
-def _grade_for_no_docs() -> EvidenceGrade:
+def _grade_for_no_docs(retrieval_degraded_code: str | None = None) -> EvidenceGrade:
+    if retrieval_degraded_code:
+        return EvidenceGrade(
+            relevance="none",
+            answerability="none",
+            ambiguity="none",
+            route="insufficient_evidence",
+            confidence=1.0,
+            reason=retrieval_degraded_code,
+        )
     return EvidenceGrade(
         relevance="none",
         answerability="none",
@@ -378,7 +401,11 @@ def _resolve_route(grade: EvidenceGrade, state: RAGState) -> str:
     is_sub_agent = bool(state.get("is_sub_agent"))
     route = grade.route
 
-    if not docs or grade.relevance == "none":
+    if not docs:
+        if state.get("retrieval_degraded_code"):
+            return "insufficient_evidence"
+        return "no_knowledge"
+    if grade.relevance == "none":
         return "no_knowledge"
 
     if grade.ambiguity == "missing_slot":
@@ -438,7 +465,7 @@ def grade_documents_node(state: RAGState) -> RAGState:
     docs = state.get("docs") or []
     grader_evidence = None
     if not docs:
-        grade = _grade_for_no_docs()
+        grade = _grade_for_no_docs(state.get("retrieval_degraded_code"))
     else:
         grader = _get_grader_model()
         if not grader:
@@ -482,6 +509,13 @@ def grade_documents_node(state: RAGState) -> RAGState:
         _emit(state, "⚠️", "证据不足，将改写查询一次", f"置信度: {grade.confidence:.2f}")
     elif route in ("clarify", "scope_select"):
         _emit(state, "❓", "需要用户补充信息", grade_update["hitl_prompt"])
+    elif route == "insufficient_evidence":
+        _emit(
+            state,
+            "⚠️",
+            "检索服务异常，暂时无法确认知识库结果",
+            grade.reason or "retrieval_degraded",
+        )
     else:
         _emit(state, "⛔", "知识库中未找到可用证据", grade.reason or "no_knowledge")
 
@@ -489,6 +523,7 @@ def grade_documents_node(state: RAGState) -> RAGState:
         "route": route,
         "retrieval_status": grade_update["retrieval_status"],
         "retrieval_outcome": grade_update["retrieval_outcome"],
+        "retrieval_degraded_code": state.get("retrieval_degraded_code"),
         "evidence_relevance": grade.relevance,
         "evidence_answerability": grade.answerability,
         "evidence_ambiguity": grade.ambiguity,
@@ -598,13 +633,19 @@ def retrieve_rewritten(state: RAGState) -> RAGState:
         "retrieved_chunks": results,
         "rewrite_retrieved_chunks": results,
         "retrieval_stage": "rewritten",
+        "retrieval_degraded_code": retrieve_meta.get("retrieval_degraded_code"),
         **retrieval_trace_fields(retrieve_meta),
     })
     if state.get("step_back_question"):
         rag_trace["step_back_question"] = state["step_back_question"]
     if state.get("hyde_document"):
         rag_trace["hyde_document"] = state["hyde_document"]
-    return {"docs": results, "context": context, "rag_trace": rag_trace}
+    return {
+        "docs": results,
+        "context": context,
+        "retrieval_degraded_code": retrieve_meta.get("retrieval_degraded_code"),
+        "rag_trace": rag_trace,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -845,6 +886,13 @@ def synthesis(state: RAGState) -> RAGState:
     ]
     if has_docs and uncovered_results:
         retrieval_status = "partial"
+    degraded_results = [
+        result
+        for result in sub_results
+        if result.get("retrieval_status") == "insufficient_evidence"
+    ]
+    if not has_docs and degraded_results:
+        retrieval_status = "insufficient_evidence"
     coverage_gap_questions = (
         list(
             dict.fromkeys(
@@ -853,8 +901,15 @@ def synthesis(state: RAGState) -> RAGState:
                 if str(result.get("question") or "").strip()
             )
         )
-        if has_docs
+        if has_docs or degraded_results
         else []
+    )
+    degraded_codes = list(
+        dict.fromkeys(
+            str(trace.get("retrieval_degraded_code") or "").strip()
+            for trace in sub_traces
+            if str(trace.get("retrieval_degraded_code") or "").strip()
+        )
     )
     hitl_traces = [
         trace for trace in sub_traces
@@ -882,7 +937,10 @@ def synthesis(state: RAGState) -> RAGState:
                 if option not in hitl_options:
                     hitl_options.append(option)
 
-    route = "answer" if has_docs else (hitl_route or "no_knowledge")
+    route = "answer" if has_docs else (
+        hitl_route
+        or ("insufficient_evidence" if retrieval_status == "insufficient_evidence" else "no_knowledge")
+    )
     rag_trace = {
         **original_trace,
         "tool_used": True,
@@ -898,6 +956,7 @@ def synthesis(state: RAGState) -> RAGState:
         "sub_traces": sub_traces,
         "retrieval_status": retrieval_status,
         "retrieval_outcome": outcome_for_status(retrieval_status).value,
+        "retrieval_degraded_code": degraded_codes[0] if degraded_codes else None,
         "evidence_relevance": "strong" if has_docs else "none",
         "evidence_answerability": "partial" if retrieval_status == "partial" else ("sufficient" if has_docs else "none"),
         "evidence_confidence": None,
@@ -913,6 +972,7 @@ def synthesis(state: RAGState) -> RAGState:
         "route": route,
         "retrieval_status": retrieval_status,
         "retrieval_outcome": outcome_for_status(retrieval_status).value,
+        "retrieval_degraded_code": degraded_codes[0] if degraded_codes else None,
         "hitl_prompt": hitl_prompt,
         "hitl_options": hitl_options,
         "rag_trace": rag_trace,
@@ -1063,12 +1123,14 @@ def _retrieve_resume_query(state: dict) -> dict:
         "hitl_resumed": True,
         "hitl_resume_strategy": "targeted_retrieval",
         "retrieval_stage": "hitl_targeted_retrieval",
+        "retrieval_degraded_code": retrieve_meta.get("retrieval_degraded_code"),
         **retrieval_trace_fields(retrieve_meta),
     })
     state.update({
         "query": query,
         "docs": results,
         "context": context,
+        "retrieval_degraded_code": retrieve_meta.get("retrieval_degraded_code"),
         "rag_trace": rag_trace,
     })
     state.update(grade_documents_node(state))

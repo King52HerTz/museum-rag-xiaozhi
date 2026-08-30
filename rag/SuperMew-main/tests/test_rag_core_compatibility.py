@@ -116,6 +116,34 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual([], result["docs"])
         self.assertEqual(0, result["rag_trace"]["grader_evidence_characters"])
 
+    def test_retrieval_failure_is_not_reported_as_no_knowledge(self):
+        degraded_meta = {
+            "retrieval_degraded_code": "EMBEDDING_UNAVAILABLE",
+            "provider_error_code": "EMBEDDING_UNAVAILABLE",
+            "provider_error_stage": "embedding",
+        }
+        with (
+            patch.object(
+                pipeline,
+                "retrieve_documents",
+                return_value={"docs": [], "meta": degraded_meta},
+            ),
+            patch.object(
+                pipeline,
+                "_get_grader_model",
+                side_effect=AssertionError("grader should not run"),
+            ),
+        ):
+            result = pipeline.run_rag_graph("临时检索失败的问题")
+
+        self.assertEqual("insufficient_evidence", result["retrieval_status"])
+        self.assertEqual("INSUFFICIENT_EVIDENCE", result["retrieval_outcome"])
+        self.assertEqual("insufficient_evidence", result["route"])
+        self.assertEqual(
+            "EMBEDDING_UNAVAILABLE",
+            result["rag_trace"]["retrieval_degraded_code"],
+        )
+
     def test_structured_rewrite_plan_keeps_only_selected_method(self):
         rewrite = utils.RewritePlan(
             method="hyde",
