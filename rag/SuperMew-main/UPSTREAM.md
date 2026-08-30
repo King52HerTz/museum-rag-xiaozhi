@@ -47,6 +47,10 @@
 - 第五批检索降级语义迁移已完成：embedding 不可用、向量库不可用和混合检索降级会写入安全
   错误码；无证据时标记 `INSUFFICIENT_EVIDENCE`，不再误报为知识库没有答案。该批次提交为
   `dbf9008 feat(rag): classify retrieval degradation`，完整测试为 31 passed、11 个子测试通过。
+- 第六批模型/Provider 错误归一化已完成：同步接口、SSE 和 Agent worker 将限流、鉴权、请求格式、
+  超时及服务不可用等常见错误映射为稳定错误码和脱敏提示；日志仅保留异常类型与错误码，流式失败
+  时不再触发持久化笔记的二次模型请求。该批次提交为 `1abaf07 feat(chat): normalize provider errors`，
+  完整测试为 34 passed、11 个子测试通过。
 
 ## 本地必须保留的功能
 

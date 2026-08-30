@@ -42,7 +42,7 @@ components:
       official_baseline_tag: supermew-upstream-main-20260830
       working_branch: codex/museum-upgrade
       working_commit: 9c3ff85
-      status: upstream_fetched_windows_portable_tests_passed_stable_outcomes_evidence_budget_result_semantics_coverage_tracking_and_retrieval_degradation_batches_migrated_full_suite_requires_linux_security_primitives_migration_pending
+      status: upstream_fetched_windows_portable_tests_passed_stable_outcomes_evidence_budget_result_semantics_coverage_tracking_retrieval_degradation_and_provider_error_normalization_batches_migrated_full_suite_requires_linux_security_primitives_migration_pending
       local_only: true
 
   hardware:
@@ -55,5 +55,5 @@ repository:
   stable_baseline_branch: main
   stable_baseline_commit: f4c547e
   integration_candidate_branch: codex/sync-supermew-upstream-20260830
-  integration_candidate_commit: dbf9008
+  integration_candidate_commit: 1abaf07
   release_rule: do_not_release_a_dirty_worktree
