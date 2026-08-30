@@ -31,6 +31,17 @@ upstream: supermew @ <commit>
 museum: <feature>
 ```
 
+## SuperMew Fork 推送保护
+
+SuperMew 的原始仓库不是本项目所有者的仓库。当前升级副本采用以下远程边界：
+
+```text
+origin   https://github.com/King52HerTz/SuperMew-museum.git
+upstream https://github.com/icey1287/SuperMew.git（仅用于 fetch）
+```
+
+升级分支 `codex/museum-upgrade` 已推送到个人 Fork。隔离仓库的 `upstream` push URL 已设置为禁用值，普通 `git push` 默认只允许推送到 `origin`；任何需要向原作者仓库提交的操作都不在本项目流程内。
+
 ## 升级检查表
 
 ### SuperMew

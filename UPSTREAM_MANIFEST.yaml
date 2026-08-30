@@ -22,11 +22,12 @@ components:
 
   supermew:
     source: https://github.com/icey1287/SuperMew.git
+    fork: https://github.com/King52HerTz/SuperMew-museum.git
     local_path: rag/SuperMew-main
     local_source_type: vendored_snapshot
     local_commit: unknown
     checked_upstream_branch: main
-    checked_upstream_commit: 23f8f14970954d50ab5c3f7af97919935cccde4d
+    checked_upstream_commit: bb027199dfecdca28387b8364e2b490937fbd3ba
     sync_policy: upgrade_by_tested_batch
     local_extension_boundary:
       - backend/api/routes/museum.py
@@ -37,13 +38,14 @@ components:
       - frontend/src/views
     upgrade_candidate:
       clone_path: rag/SuperMew-upstream
-      source_commit: 23f8f14970954d50ab5c3f7af97919935cccde4d
+      source_commit: bb027199dfecdca28387b8364e2b490937fbd3ba
       official_baseline_branch: codex/supermew-upstream-20260830
       official_baseline_tag: supermew-upstream-main-20260830
       working_branch: codex/museum-upgrade
-      working_commit: 4163f1e
-      status: upstream_fetched_windows_portable_tests_passed_stable_outcomes_evidence_budget_result_semantics_coverage_tracking_retrieval_degradation_provider_error_normalization_rerank_provider_safety_museum_bridge_safety_rag_audit_panel_and_bridge_rag_outcome_batches_migrated_mawangdui_eval_v2_compat_gate_full_suite_requires_linux_security_primitives_live_quality_pending
-      local_only: true
+      working_commit: d6ad05e
+      fork_branch: https://github.com/King52HerTz/SuperMew-museum/tree/codex/museum-upgrade
+      status: fork_created_branch_pushed_upstream_push_disabled_windows_portable_tests_passed_stable_outcomes_evidence_budget_result_semantics_coverage_tracking_retrieval_degradation_provider_error_normalization_rerank_provider_safety_museum_bridge_safety_rag_audit_panel_and_bridge_rag_outcome_batches_migrated_mawangdui_eval_v3_compat_gate_full_suite_requires_linux_security_primitives_live_quality_pending
+      local_only: false
 
   hardware:
     local_path: yingjian/SmartRing-Plus-main
