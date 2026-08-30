@@ -44,6 +44,9 @@
 - 第四批复杂问题覆盖度迁移已完成：合成阶段会把未回答的子问题记录为
   `coverage_gap_questions`，同时保留已召回片段并标记 `INSUFFICIENT_EVIDENCE`；完整测试为
   28 passed、11 个子测试通过。该批次提交为 `478726c feat(rag): track synthesis coverage gaps`。
+- 第五批检索降级语义迁移已完成：embedding 不可用、向量库不可用和混合检索降级会写入安全
+  错误码；无证据时标记 `INSUFFICIENT_EVIDENCE`，不再误报为知识库没有答案。该批次提交为
+  `dbf9008 feat(rag): classify retrieval degradation`，完整测试为 31 passed、11 个子测试通过。
 
 ## 本地必须保留的功能
 
