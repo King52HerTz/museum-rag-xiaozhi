@@ -36,6 +36,8 @@ export interface RagTrace {
   rerank_applied?: boolean | null;
   rerank_model?: string;
   rerank_error?: string;
+  rerank_error_code?: string;
+  rerank_retryable?: boolean | null;
   expansion_type?: string;
   step_back_question?: string;
   expanded_query?: string;

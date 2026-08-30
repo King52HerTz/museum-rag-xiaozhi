@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from backend.rag import pipeline
 from backend.rag import utils
+from backend.schemas.chat import normalize_rag_trace
 
 
 class _FakeStructuredModel:
@@ -155,6 +156,20 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("hyde", result["rewrite_method"])
         self.assertEqual("", result["step_back_question"])
         self.assertIn("假设性答案文档", result["rewritten_query"])
+
+    def test_rerank_error_fields_survive_trace_normalization(self):
+        trace = normalize_rag_trace(
+            {
+                "retrieval_mode": "hybrid",
+                "rerank_error": "MODEL_RATE_LIMITED",
+                "rerank_error_code": "MODEL_RATE_LIMITED",
+                "rerank_retryable": True,
+            }
+        )
+
+        self.assertEqual("MODEL_RATE_LIMITED", trace["rerank_error"])
+        self.assertEqual("MODEL_RATE_LIMITED", trace["rerank_error_code"])
+        self.assertTrue(trace["rerank_retryable"])
 
 
 if __name__ == "__main__":

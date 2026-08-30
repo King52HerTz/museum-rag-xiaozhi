@@ -77,6 +77,8 @@ class RagTraceFields(StrictSchema):
     rerank_model: Optional[str] = None
     rerank_endpoint: Optional[str] = None
     rerank_error: Optional[str] = None
+    rerank_error_code: Optional[str] = None
+    rerank_retryable: Optional[bool] = None
     rerank_timeout_seconds: Optional[float] = None
     rerank_min_score: Optional[float] = None
     post_rerank_count: Optional[int] = None

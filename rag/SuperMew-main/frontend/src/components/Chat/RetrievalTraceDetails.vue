@@ -70,6 +70,12 @@
         <div v-if="msg.ragTrace.rerank_error" class="trace-line">
           Rerank状态：{{ msg.ragTrace.rerank_error }}
         </div>
+        <div v-if="msg.ragTrace.rerank_error_code" class="trace-line">
+          Rerank错误码：{{ msg.ragTrace.rerank_error_code }}
+        </div>
+        <div v-if="msg.ragTrace.rerank_retryable !== null && msg.ragTrace.rerank_retryable !== undefined" class="trace-line">
+          Rerank可重试：{{ msg.ragTrace.rerank_retryable ? '是' : '否' }}
+        </div>
         <div v-if="msg.ragTrace.expansion_type" class="trace-line">
           扩展策略：{{ msg.ragTrace.expansion_type }}
         </div>

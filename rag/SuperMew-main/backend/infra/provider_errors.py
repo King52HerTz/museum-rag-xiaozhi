@@ -62,7 +62,7 @@ def classify_provider_error(error: BaseException) -> PublicProviderError:
             retryable=False,
         )
 
-    if "response_format" in normalized or "invalid_request_error" in normalized:
+    if status in (400, 422) or "response_format" in normalized or "invalid_request_error" in normalized:
         return PublicProviderError(
             code="PROVIDER_REQUEST_INVALID",
             status_code=502,
@@ -80,7 +80,7 @@ def classify_provider_error(error: BaseException) -> PublicProviderError:
             retryable=True,
         )
 
-    if status in (502, 503, 504) or any(
+    if status in (500, 502, 503, 504) or any(
         marker in normalized
         for marker in ("connection", "connecterror", "service unavailable", "temporarily unavailable")
     ):
