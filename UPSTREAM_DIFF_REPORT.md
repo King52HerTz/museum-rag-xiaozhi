@@ -49,6 +49,10 @@ Linux 的 `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource` 支持。
 错误码和复杂问题证据缺口，只消费已有 trace，不改变问答或设备协议。提交为
 `59b8364 feat(frontend): surface rag outcomes`，前端构建通过。
 
+第十批补充桥接层结果语义传递：`/api/museum/query` 将可回答、无知识和检索降级明确写入 trace，
+小智插件按状态构造导览上下文，并在证据缺口时禁止自行补全；完整测试更新为 39 passed、11 个
+子测试通过，RAG 编译和小智插件语法检查通过。提交为 `1410684 feat(bridge): propagate rag outcomes to xiaozhi`。
+
 ## 初次审计记录（2026-08-13）
 
 以下内容保留首次 ZIP/快照审计时的来源和边界，作为历史记录；本文件顶部的

@@ -61,6 +61,10 @@
 - 第九批 RAG 结果可核验面板已完成：前端聊天追踪现在展示回答能力、检索状态、最终路由、降级码、
   Provider 错误码和复杂问题证据缺口；只消费已有 trace，不改变问答或设备协议。该批次提交为
   `59b8364 feat(frontend): surface rag outcomes`，前端构建通过。
+- 第十批桥接层结果语义传递已完成：`/api/museum/query` 在兼容旧响应的前提下返回
+  `ANSWERABLE`、`NO_KNOWLEDGE` 或 `INSUFFICIENT_EVIDENCE`，小智插件根据状态约束导览话术，
+  并把证据覆盖缺口传给 LLM；完整测试为 39 passed、11 个子测试通过。该批次提交为
+  `1410684 feat(bridge): propagate rag outcomes to xiaozhi`。
 
 ## 本地必须保留的功能
 
