@@ -58,6 +58,9 @@
 - 第八批博物馆桥接失败安全契约已完成：`/api/museum/query` 的异常响应只保留脱敏错误码和提示，
   日志不再记录完整堆栈，原有 `MUSEUM_QUERY_FAILED` 响应结构保持不变。该批次提交为
   `707a917 fix(bridge): redact museum query failures`，完整测试为 38 passed、11 个子测试通过。
+- 第九批 RAG 结果可核验面板已完成：前端聊天追踪现在展示回答能力、检索状态、最终路由、降级码、
+  Provider 错误码和复杂问题证据缺口；只消费已有 trace，不改变问答或设备协议。该批次提交为
+  `59b8364 feat(frontend): surface rag outcomes`，前端构建通过。
 
 ## 本地必须保留的功能
 

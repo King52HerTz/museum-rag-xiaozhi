@@ -174,6 +174,7 @@ rag/SuperMew-main/.env.example
 - [阶段 9：马王堆官方资料库与 SuperMew 上游隔离升级](STAGE_9_MAWANGDUI_UPSTREAM.md)
 - [阶段 10：RAG 精排 Provider 安全与可观测性](STAGE_10_RAG_PROVIDER_SAFETY.md)
 - [阶段 11：博物馆桥接失败安全契约](STAGE_11_MUSEUM_BRIDGE_SAFETY.md)
+- [阶段 12：RAG 结果可核验面板](STAGE_12_RAG_AUDIT_PANEL.md)
 
 ## 项目定位
 

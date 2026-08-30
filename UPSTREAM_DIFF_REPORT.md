@@ -45,6 +45,10 @@ Linux 的 `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource` 支持。
 日志不再记录完整堆栈，同时保持 `MUSEUM_QUERY_FAILED` 与原有响应结构。提交为
 `707a917 fix(bridge): redact museum query failures`，完整测试更新为 38 passed、11 个子测试通过。
 
+第九批补充 RAG 结果可核验面板：前端聊天追踪显示回答能力、检索状态、最终路由、降级码、Provider
+错误码和复杂问题证据缺口，只消费已有 trace，不改变问答或设备协议。提交为
+`59b8364 feat(frontend): surface rag outcomes`，前端构建通过。
+
 ## 初次审计记录（2026-08-13）
 
 以下内容保留首次 ZIP/快照审计时的来源和边界，作为历史记录；本文件顶部的
