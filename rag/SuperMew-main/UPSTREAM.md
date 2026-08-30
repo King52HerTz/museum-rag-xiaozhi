@@ -65,6 +65,10 @@
   `ANSWERABLE`、`NO_KNOWLEDGE` 或 `INSUFFICIENT_EVIDENCE`，小智插件根据状态约束导览话术，
   并把证据覆盖缺口传给 LLM；完整测试为 39 passed、11 个子测试通过。该批次提交为
   `1410684 feat(bridge): propagate rag outcomes to xiaozhi`。
+- 第十一批在隔离的 `rag/SuperMew-upstream` 分支扩展马王堆人工标注集和 corpus manifest，
+  新增 Windows 可运行的离线评测兼容门禁；v2 共 32 条样本，评测/适配器/CLI/门禁定向测试为
+  46 passed。该批次提交为 `4163f1e feat(evaluation): add mawangdui compatibility gate`，
+  尚未迁移到当前运行副本。
 
 ## 本地必须保留的功能
 

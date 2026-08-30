@@ -53,6 +53,10 @@ Linux 的 `O_DIRECTORY`、`O_NOFOLLOW` 和 `resource` 支持。
 小智插件按状态构造导览上下文，并在证据缺口时禁止自行补全；完整测试更新为 39 passed、11 个
 子测试通过，RAG 编译和小智插件语法检查通过。提交为 `1410684 feat(bridge): propagate rag outcomes to xiaozhi`。
 
+第十一批只在隔离 `rag/SuperMew-upstream` 分支扩展马王堆人工标注集到 32 条，并加入官方文档名
+manifest、样本覆盖门禁和离线运行时导入边界检查；评测/适配器/CLI/门禁定向测试为 46 passed。
+提交为 `4163f1e feat(evaluation): add mawangdui compatibility gate`，当前运行副本未被覆盖。
+
 ## 初次审计记录（2026-08-13）
 
 以下内容保留首次 ZIP/快照审计时的来源和边界，作为历史记录；本文件顶部的

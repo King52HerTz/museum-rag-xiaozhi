@@ -176,6 +176,7 @@ rag/SuperMew-main/.env.example
 - [阶段 11：博物馆桥接失败安全契约](STAGE_11_MUSEUM_BRIDGE_SAFETY.md)
 - [阶段 12：RAG 结果可核验面板](STAGE_12_RAG_AUDIT_PANEL.md)
 - [阶段 13：桥接层传递 RAG 结果语义](STAGE_13_BRIDGE_RAG_OUTCOME.md)
+- [阶段 14：马王堆评测集扩展与 Windows 兼容性门禁](STAGE_14_MAWANGDUI_EVAL_GATE.md)
 
 ## 项目定位
 

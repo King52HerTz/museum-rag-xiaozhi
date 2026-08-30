@@ -41,8 +41,8 @@ components:
       official_baseline_branch: codex/supermew-upstream-20260830
       official_baseline_tag: supermew-upstream-main-20260830
       working_branch: codex/museum-upgrade
-      working_commit: 9c3ff85
-      status: upstream_fetched_windows_portable_tests_passed_stable_outcomes_evidence_budget_result_semantics_coverage_tracking_retrieval_degradation_provider_error_normalization_rerank_provider_safety_museum_bridge_safety_rag_audit_panel_and_bridge_rag_outcome_batches_migrated_full_suite_requires_linux_security_primitives_migration_pending
+      working_commit: 4163f1e
+      status: upstream_fetched_windows_portable_tests_passed_stable_outcomes_evidence_budget_result_semantics_coverage_tracking_retrieval_degradation_provider_error_normalization_rerank_provider_safety_museum_bridge_safety_rag_audit_panel_and_bridge_rag_outcome_batches_migrated_mawangdui_eval_v2_compat_gate_full_suite_requires_linux_security_primitives_live_quality_pending
       local_only: true
 
   hardware:
