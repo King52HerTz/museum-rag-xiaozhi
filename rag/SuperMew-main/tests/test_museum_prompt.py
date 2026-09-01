@@ -54,6 +54,8 @@ class MuseumPromptTests(unittest.TestCase):
         self.assertIn("约80到180字", prompt)
         self.assertIn("不使用固定小标题", prompt)
         self.assertIn("不要把缺口扩写成大段免责声明", prompt)
+        self.assertIn("最小有效解释", prompt)
+        self.assertIn("不要直接拒答", prompt)
 
 
 if __name__ == "__main__":
