@@ -69,16 +69,34 @@ body {
 }
 
 .logo-icon {
-    font-size: 2rem;
     background: var(--white);
     width: 50px;
     height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 14px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    animation: bounce 3s infinite;
+    overflow: hidden;
+}
+
+.logo-icon img,
+.auth-brand-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.brand-copy {
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-copy small {
+    margin-top: 4px;
+    color: var(--text-light);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
 }
 
 .sidebar-header h2 {
@@ -86,6 +104,37 @@ body {
     font-size: 1.3rem;
     font-weight: 800;
     letter-spacing: 0.04em;
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.auth-brand-mark {
+    width: 54px;
+    height: 54px;
+    flex: 0 0 54px;
+}
+
+.auth-brand > span:last-child {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-brand strong {
+    color: var(--text-color);
+    font-size: 1.25rem;
+}
+
+.auth-brand small {
+    margin-top: 5px;
+    color: var(--primary-color);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
 }
 
 .sidebar-nav {

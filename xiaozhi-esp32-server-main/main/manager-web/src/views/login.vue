@@ -9,11 +9,11 @@
             margin-left: 11px;
             gap: 10px;
           ">
-          <img loading="lazy" alt="智博导览" src="@/assets/brand/zhibo-lockup.svg" class="auth-brand" />
+          <BrandLockup size="large" />
         </div>
       </el-header>
       <div class="login-person">
-        <img loading="lazy" alt="智博导览博物馆展陈图形" src="@/assets/brand/museum-hero.svg" style="width: 100%" />
+        <img loading="lazy" alt="智博导览博物馆展陈" src="@/assets/brand/museum-hero.jpg" class="auth-hero-image" />
         <div class="auth-hero-copy">
           <strong>让每一件文物，都能被听见</strong>
           <span>知识库、智能体与导览设备的一体化管理平台</span>
@@ -158,6 +158,7 @@
 
 <script>
 import Api from "@/apis/api";
+import BrandLockup from "@/components/BrandLockup.vue";
 import VersionFooter from "@/components/VersionFooter.vue";
 import i18n, { changeLanguage } from "@/i18n";
 import { getUUID, goToPage, showDanger, showSuccess, sm2Encrypt, validateMobile } from "@/utils";
@@ -167,6 +168,7 @@ import featureManager from "@/utils/featureManager";
 export default {
   name: "login",
   components: {
+    BrandLockup,
     VersionFooter,
   },
   computed: {

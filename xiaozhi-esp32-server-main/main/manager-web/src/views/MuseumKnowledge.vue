@@ -20,7 +20,7 @@
           <el-alert v-if="workbenchMessage" class="workbench-message" :title="workbenchMessage" type="info" :closable="false" />
         </div>
         <div class="hero-visual" aria-hidden="true">
-          <img src="@/assets/brand/museum-hero.svg" alt="" />
+          <img src="@/assets/brand/museum-hero.jpg" alt="" />
         </div>
       </section>
 

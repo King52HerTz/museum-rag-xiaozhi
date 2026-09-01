@@ -1,5 +1,9 @@
 <template>
   <div class="auth-panel">
+    <div class="auth-brand">
+      <span class="auth-brand-mark"><img :src="zhiboMark" alt="" /></span>
+      <span><strong>智博导览</strong><small>SMART MUSEUM GUIDE</small></span>
+    </div>
     <h2>{{ authStore.authMode === 'login' ? '登录智博导览知识库工作台' : '注册智博导览知识库工作台' }}</h2>
     <p>登录后即可使用文档上传、检索问答和历史会话；管理员可管理馆藏知识库。</p>
     <div class="auth-form">
@@ -32,6 +36,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth';
+import zhiboMark from '@/assets/zhibo-mark.png';
 
 const authStore = useAuthStore();
 

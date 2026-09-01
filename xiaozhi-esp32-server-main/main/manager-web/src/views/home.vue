@@ -237,9 +237,11 @@ export default {
   width: 100%;
   height: 100%;
   text-align: left;
-  background-image: url("@/assets/brand/museum-hero.svg");
+  background-image:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.98) 0%, rgba(255, 253, 248, 0.9) 34%, rgba(255, 253, 248, 0.18) 62%),
+    url("@/assets/brand/museum-hero.jpg");
   overflow: hidden;
-  background-size: auto 100%;
+  background-size: cover;
   /* 确保背景图像覆盖整个元素 */
   background-position: right center;
   background-repeat: no-repeat;

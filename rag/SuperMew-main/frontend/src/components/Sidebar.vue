@@ -1,8 +1,11 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="logo-icon">🏛️</div>
-      <h2>智博导览</h2>
+      <div class="logo-icon"><img :src="zhiboMark" alt="" /></div>
+      <div class="brand-copy">
+        <h2>智博导览</h2>
+        <small>知识库工作台</small>
+      </div>
     </div>
     <nav class="sidebar-nav">
       <button @click="onNewChat" :class="['nav-btn', { active: chatStore.activeNav === 'newChat' }]">
@@ -34,6 +37,7 @@
 import { useAuthStore } from '@/stores/auth';
 import { useChatStore } from '@/stores/chat';
 import { useSessionStore } from '@/stores/sessions';
+import zhiboMark from '@/assets/zhibo-mark.png';
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();

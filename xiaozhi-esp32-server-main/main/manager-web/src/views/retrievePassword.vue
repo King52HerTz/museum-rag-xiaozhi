@@ -4,7 +4,7 @@
       <!-- 保持相同的头部 -->
       <el-header>
         <div style="display: flex;align-items: center;margin-top: 15px;margin-left: 10px;gap: 10px;">
-          <img loading="lazy" alt="智博导览" src="@/assets/brand/zhibo-lockup.svg" class="auth-brand" />
+          <BrandLockup size="large" />
         </div>
       </el-header>
       <div class="login-person">
@@ -99,6 +99,7 @@
 
 <script>
 import Api from '@/apis/api';
+import BrandLockup from '@/components/BrandLockup.vue';
 import VersionFooter from '@/components/VersionFooter.vue';
 import { getUUID, goToPage, showDanger, showSuccess, validateMobile, sm2Encrypt } from '@/utils';
 import { mapState } from 'vuex';
@@ -110,6 +111,7 @@ import { changeLanguage } from '@/i18n';
 export default {
   name: 'retrieve',
   components: {
+    BrandLockup,
     VersionFooter
   },
   computed: {

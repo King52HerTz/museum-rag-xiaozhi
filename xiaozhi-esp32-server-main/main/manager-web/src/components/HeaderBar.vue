@@ -3,7 +3,7 @@
     <div class="header-container">
       <!-- 左侧元素 -->
       <div class="header-left" @click="handleRouter('home')">
-        <img loading="lazy" alt="智博导览" src="@/assets/brand/zhibo-lockup.svg" class="brand-lockup" />
+        <BrandLockup />
       </div>
 
       <!-- 中间导航菜单 -->
@@ -204,10 +204,12 @@ import i18n, { changeLanguage } from "@/i18n";
 import featureManager from "@/utils/featureManager"; // 引入功能管理工具类
 import { mapActions, mapState } from "vuex";
 import ChangePasswordDialog from "./ChangePasswordDialog.vue"; // 引入修改密码弹窗组件
+import BrandLockup from "./BrandLockup.vue";
 
 export default {
   name: "HeaderBar",
   components: {
+    BrandLockup,
     ChangePasswordDialog,
   },
   props: ["devices"], // 接收父组件设备列表
@@ -633,13 +635,6 @@ export default {
   gap: 10px;
   min-width: 196px;
   cursor: pointer;
-}
-
-.brand-lockup {
-  width: 176px;
-  height: 50px;
-  object-fit: contain;
-  object-position: left center;
 }
 
 .header-center {
