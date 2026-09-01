@@ -1407,7 +1407,7 @@ export default {
   display: flex;
   position: relative;
   flex-direction: column;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd);
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca);
   background-size: cover;
   -webkit-background-size: cover;
   -o-background-size: cover;
@@ -1476,7 +1476,7 @@ export default {
   padding: 0 0 5px 0;
   font-weight: 700;
   font-size: 19px;
-  color: #3d4566;
+  color: var(--museum-text);
   justify-content: space-between;
 }
 
@@ -1497,10 +1497,10 @@ export default {
   padding-bottom: 4px;
   &::-webkit-scrollbar {
       height: 6px;
-      background: #e6ebff;
+      background: var(--museum-primary-soft);
     }
     &::-webkit-scrollbar-thumb {
-      background: #5778ff;
+      background: var(--museum-primary);
       border-radius: 8px;
     }
 }
@@ -1524,7 +1524,7 @@ export default {
 .header-icon {
   width: 37px;
   height: 37px;
-  background: #5778ff;
+  background: var(--museum-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1568,7 +1568,7 @@ export default {
 }
 
 .play-button {
-  color: #409eff;
+  color: var(--museum-primary);
   transition: color 0.3s;
 }
 
@@ -1601,12 +1601,12 @@ export default {
   min-width: 60px;
   padding: 0 12px;
   border-radius: 8px;
-  background: #e6ebff;
+  background: var(--museum-primary-soft);
   line-height: 4vh;
   font-weight: 400;
   font-size: 11px;
   text-align: center;
-  color: #5778ff;
+  color: var(--museum-primary);
   cursor: pointer;
   transition: background-color 0.3s ease;
   white-space: nowrap;
@@ -1644,7 +1644,7 @@ export default {
 
 .model-row .el-form-item__label {
   font-size: 12px !important;
-  color: #3d4566 !important;
+  color: var(--museum-text) !important;
   font-weight: 400;
   line-height: 22px;
   padding-bottom: 2px;
@@ -1664,17 +1664,17 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #5778ff;
+  color: var(--museum-primary);
   font-weight: bold;
   font-size: 12px;
   margin-right: 8px;
   position: relative;
-  background-color: #e6ebff;
+  background-color: var(--museum-primary-soft);
 }
 
 ::v-deep .el-form-item__label {
   font-size: 12px !important;
-  color: #3d4566 !important;
+  color: var(--museum-text) !important;
   font-weight: 400;
   line-height: 22px;
   padding-bottom: 2px;
@@ -1711,21 +1711,21 @@ export default {
 }
 
 .custom-close-btn:hover {
-  color: #409eff;
-  border-color: #409eff;
+  color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 .edit-function-btn {
-  background: #e6ebff;
-  color: #5778ff;
-  border: 1px solid #adbdff;
+  background: var(--museum-primary-soft);
+  color: var(--museum-primary);
+  border: 1px solid var(--museum-primary-light);
   border-radius: 18px;
   padding: 10px 20px;
   transition: all 0.3s;
 }
 
 .edit-function-btn.active-btn {
-  background: #5778ff;
+  background: var(--museum-primary);
   color: white;
 }
 
@@ -1737,23 +1737,23 @@ export default {
 }
 
 .chat-history-options ::v-deep .el-radio-button {
-  border-color: #5778ff;
+  border-color: var(--museum-primary);
 }
 
 .chat-history-options ::v-deep .el-radio-button .el-radio-button__inner {
-  color: #5778ff;
-  border-color: #5778ff;
+  color: var(--museum-primary);
+  border-color: var(--museum-primary);
   background-color: transparent;
 }
 
 .chat-history-options ::v-deep .el-radio-button.is-active .el-radio-button__inner {
-  background-color: #5778ff;
-  border-color: #5778ff;
+  background-color: var(--museum-primary);
+  border-color: var(--museum-primary);
   color: white;
 }
 
 .chat-history-options ::v-deep .el-radio-button .el-radio-button__inner:hover {
-  color: #5778ff;
+  color: var(--museum-primary);
 }
 
 .header-actions {
@@ -1767,7 +1767,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #979db1;
+  color: var(--museum-text-muted);
   font-size: 12px;
   margin-right: 8px;
 }
@@ -1778,7 +1778,7 @@ export default {
 }
 
 .header-actions .save-btn {
-  background: #5778ff;
+  background: var(--museum-primary);
   color: white;
   border: none;
   border-radius: 18px;
@@ -1788,9 +1788,9 @@ export default {
 }
 
 .header-actions .reset-btn {
-  background: #e6ebff;
-  color: #5778ff;
-  border: 1px solid #adbdff;
+  background: var(--museum-primary-soft);
+  color: var(--museum-primary);
+  border: 1px solid var(--museum-primary-light);
   border-radius: 18px;
   padding: 8px 16px;
   height: 32px;
@@ -1809,7 +1809,7 @@ export default {
 }
 
 .doc-link {
-  color: #5778ff;
+  color: var(--museum-primary);
   text-decoration: none;
   margin-left: 4px;
 
@@ -1844,19 +1844,19 @@ export default {
   padding: 0 8px;
 }
 .custom-tag {
-  background: #e6ebff;
-  color: #5778ff;
+  background: var(--museum-primary-soft);
+  color: var(--museum-primary);
   border-radius: 8px;
   font-size: 12px;
   font-weight: normal;
   border: none;
 }
 .custom-tag-btn {
-  background: #e6ebff;
-  color: #5778ff;
+  background: var(--museum-primary-soft);
+  color: var(--museum-primary);
   border-radius: 8px;
   font-weight: normal;
-  border: 1px solid #e6ebff;
+  border: 1px solid var(--museum-primary-soft);
   &:hover {
     background-color: #d0d8ff;
   }

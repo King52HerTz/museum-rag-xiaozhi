@@ -333,7 +333,7 @@ export default {
   font-weight: 400;
   margin-top: auto;
   padding-top: 30px;
-  color: #979db1;
+  color: var(--museum-text-muted);
   text-align: center;
   /* 居中显示 */
 }

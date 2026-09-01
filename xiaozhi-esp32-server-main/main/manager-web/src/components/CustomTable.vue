@@ -297,11 +297,11 @@ export default {
 }
 
 :deep(.el-loading-spinner .path) {
-  stroke: #6b8cff;
+  stroke: var(--museum-primary);
 }
 
 :deep(.el-loading-text) {
-  color: #6b8cff !important;
+  color: var(--museum-primary) !important;
   font-size: 14px;
   margin-top: 8px;
 }

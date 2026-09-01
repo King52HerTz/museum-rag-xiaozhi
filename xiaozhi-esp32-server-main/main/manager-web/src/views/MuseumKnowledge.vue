@@ -655,7 +655,7 @@ export default {
 <style scoped>
 .museum-knowledge-page {
   min-height: 100vh;
-  background: #f5f7fb;
+  background: var(--museum-background);
 }
 
 .museum-main {
@@ -679,7 +679,7 @@ export default {
   gap: 28px;
   background:
     radial-gradient(circle at 88% 12%, rgba(125, 211, 252, 0.35), transparent 30%),
-    linear-gradient(135deg, #1f2f63 0%, #4f67df 62%, #7dd3fc 100%);
+    linear-gradient(135deg, var(--museum-text) 0%, var(--museum-primary) 62%, #7dd3fc 100%);
   color: #fff;
 }
 
@@ -792,7 +792,7 @@ export default {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  color: #1f2f63;
+  color: var(--museum-text);
   font-size: 13px;
   font-weight: 600;
 }
@@ -811,7 +811,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #1f2f63;
+  color: var(--museum-text);
   font-weight: 600;
 }
 
@@ -849,7 +849,7 @@ export default {
 
 .section-heading h2 {
   margin: 0 0 6px;
-  color: #1f2f63;
+  color: var(--museum-text);
   font-size: 22px;
 }
 
@@ -862,8 +862,8 @@ export default {
 .section-heading code {
   padding: 2px 6px;
   border-radius: 6px;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--museum-primary-soft);
+  color: var(--museum-primary-hover);
 }
 
 .form-grid {
@@ -913,7 +913,7 @@ export default {
 }
 
 .context-index {
-  color: #4f67df;
+  color: var(--museum-primary);
   font-weight: 700;
 }
 

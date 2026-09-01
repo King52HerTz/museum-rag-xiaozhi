@@ -657,7 +657,7 @@ export default {
   position: relative;
   flex-direction: column;
   background-size: cover;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
   -webkit-background-size: cover;
   -o-background-size: cover;
 }
@@ -699,7 +699,7 @@ export default {
   border-right: 1px solid #ebeef5;
   background: linear-gradient(
       120deg,
-      rgba(107, 140, 255, 0.3) 0%,
+      rgba(181, 138, 76, 0.3) 0%,
       rgba(169, 102, 255, 0.3) 25%,
       transparent 60%
     ),
@@ -712,7 +712,7 @@ export default {
 
 .nav-panel .el-menu-item {
   height: 50px;
-  background: #e9f0ff;
+  background: var(--museum-primary-soft);
   line-height: 50px;
   border-radius: 4px 0 0 4px !important;
   transition: all 0.3s;
@@ -725,7 +725,7 @@ export default {
 }
 
 .nav-panel .el-menu-item.is-active {
-  background: #5778ff;
+  background: var(--museum-primary);
   position: relative;
   padding-left: 40px !important;
 }
@@ -779,7 +779,7 @@ export default {
 }
 
 .btn-search {
-  background: linear-gradient(135deg, #6b8cff, #a966ff);
+  background: linear-gradient(135deg, var(--museum-primary), var(--museum-primary-light));
   border: none;
   color: white;
 }
@@ -806,7 +806,7 @@ export default {
   line-height: 32px;
   border-radius: 4px;
   border: 1px solid #e4e7ed;
-  background: #dee7ff;
+  background: var(--museum-primary-soft);
   color: #606266;
   font-size: 14px;
 }
@@ -841,7 +841,7 @@ export default {
 }
 
 ::v-deep .search-input .el-input__inner:focus {
-  border-color: #6b8cff;
+  border-color: var(--museum-primary);
   outline: none;
 }
 
@@ -896,7 +896,7 @@ export default {
 }
 
 .batch-actions .el-button--primary {
-  background: #5f70f3 !important;
+  background: var(--museum-primary) !important;
   color: white;
 }
 
@@ -911,7 +911,7 @@ export default {
 }
 
 .batch-actions .el-button:first-child {
-  background: linear-gradient(135deg, #409eff, #6b8cff);
+  background: linear-gradient(135deg, var(--museum-primary), var(--museum-primary));
   border: none;
   color: white;
 }
@@ -982,8 +982,8 @@ export default {
 }
 
 ::v-deep .el-checkbox__input.is-checked .el-checkbox__inner {
-  background-color: #5f70f3;
-  border-color: #5f70f3;
+  background-color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 .voice-management-btn {
@@ -1037,7 +1037,7 @@ export default {
     padding: 0 12px;
     border-radius: 4px;
     border: 1px solid #e4e7ed;
-    background: #dee7ff;
+    background: var(--museum-primary-soft);
     color: #606266;
     font-size: 14px;
     cursor: pointer;
@@ -1072,9 +1072,9 @@ export default {
   }
 
   .pagination-btn.active {
-    background: #5f70f3 !important;
+    background: var(--museum-primary) !important;
     color: #ffffff !important;
-    border-color: #5f70f3 !important;
+    border-color: var(--museum-primary) !important;
 
     &:hover {
       background: #6d7cf5 !important;
@@ -1166,11 +1166,11 @@ export default {
 }
 
 ::v-deep .el-loading-spinner .path {
-  stroke: #6b8cff;
+  stroke: var(--museum-primary);
 }
 
 ::v-deep .el-loading-text {
-  color: #6b8cff !important;
+  color: var(--museum-primary) !important;
   font-size: 14px;
   margin-top: 8px;
 }

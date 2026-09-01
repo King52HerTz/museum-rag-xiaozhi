@@ -530,7 +530,7 @@ export default {
 
     &.active {
         .step-number {
-            background: #6b8cff;
+            background: var(--museum-primary);
             color: white;
         }
 
@@ -663,8 +663,8 @@ export default {
     position: absolute;
     top: 0;
     bottom: 0;
-    background: rgba(107, 140, 255, 0.3);
-    border: 1px solid #6b8cff;
+    background: rgba(181, 138, 76, 0.3);
+    border: 1px solid var(--museum-primary);
     pointer-events: none;
 }
 

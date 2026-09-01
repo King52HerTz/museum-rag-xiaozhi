@@ -137,7 +137,7 @@
               </el-tooltip>
             </div>
           </div>
-          <div style="font-size: 14px; color: #979db1">
+          <div style="font-size: 14px; color: var(--museum-text-muted)">
             {{ $t("login.agreeTo") }}
             <div style="display: inline-block; color: var(--museum-primary-hover); cursor: pointer" @click="openPage('/user-agreement.html')">
               {{ $t("login.userAgreement") }}

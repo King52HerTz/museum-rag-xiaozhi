@@ -79,7 +79,7 @@
             <div class="login-btn" @click="retrievePassword">{{ $t('retrievePassword.resetButton') }}</div>
 
             <!-- 保持相同的协议声明 -->
-            <div style="font-size: 14px;color: #979db1;">
+            <div style="font-size: 14px;color: var(--museum-text-muted);">
               {{ $t('retrievePassword.agreeTo') }}
               <div style="display: inline-block;color: var(--museum-primary-hover);cursor: pointer;" @click="openPage('/user-agreement.html')">{{ $t('register.userAgreement') }}</div>
               {{ $t('login.and') }}
@@ -293,7 +293,7 @@ export default {
   line-height: 40px;
   border-radius: 4px;
   font-size: 14px;
-  background: rgb(87, 120, 255);
+  background: var(--museum-primary);
   border: none;
   padding: 0;
 

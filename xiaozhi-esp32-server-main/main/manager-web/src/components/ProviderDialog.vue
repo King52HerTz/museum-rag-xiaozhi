@@ -361,7 +361,7 @@ export default {
     .field-config-title {
       font-size: 16px;
       font-weight: 600;
-      color: #3d4566;
+      color: var(--museum-text);
     }
   }
   .divider {

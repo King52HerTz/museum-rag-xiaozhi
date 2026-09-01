@@ -189,7 +189,7 @@ export default {
 .drawer-title {
   font-size: 18px;
   font-weight: 600;
-  color: #3d4566;
+  color: var(--museum-text);
 }
 
 .drawer-close-btn {
@@ -211,8 +211,8 @@ export default {
 }
 
 .drawer-close-btn:hover {
-  color: #409eff;
-  border-color: #409eff;
+  color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 .drawer-content {
@@ -260,7 +260,7 @@ export default {
 
 ::v-deep .el-form-item__label {
   font-size: 14px !important;
-  color: #3d4566 !important;
+  color: var(--museum-text) !important;
   font-weight: 500;
   padding-bottom: 8px;
 }
@@ -275,11 +275,11 @@ export default {
   font-size: 14px;
 }
 .replacement-label i:hover {
-  color: #409eff;
+  color: var(--museum-primary);
 }
 .replacement-word-select ::v-deep .el-tag {
-  background: #e6ebff;
-  color: #5778ff;
+  background: var(--museum-primary-soft);
+  color: var(--museum-primary);
   border-radius: 8px;
   font-size: 12px;
   font-weight: normal;
@@ -287,7 +287,7 @@ export default {
 }
 
 .replacement-word-select ::v-deep .el-tag__close {
-  color: #5778ff;
+  color: var(--museum-primary);
 }
 .replacement-word-select ::v-deep .el-icon-close {
   background: #fff;
@@ -322,8 +322,8 @@ export default {
 }
 
 .replacement-tag {
-  background-color: #409eff;
-  border-color: #409eff;
+  background-color: var(--museum-primary);
+  border-color: var(--museum-primary);
   color: #fff;
 }
 

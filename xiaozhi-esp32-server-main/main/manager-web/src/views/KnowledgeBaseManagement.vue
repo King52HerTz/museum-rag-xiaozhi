@@ -61,7 +61,7 @@
                             v-model="kb.status"
                             :active-value="1"
                             :inactive-value="0"
-                            active-color="#5778ff"
+                            active-color="var(--museum-primary)"
                             inactive-color="#DCDFE6"
                             @click.native.stop
                             @change="handleStatusChange(kb)"
@@ -695,7 +695,7 @@ export default {
   display: flex;
   position: relative;
   flex-direction: column;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
   background-size: cover;
   -webkit-background-size: cover;
   -o-background-size: cover;
@@ -1134,7 +1134,7 @@ export default {
     flex: 1;
 
     .el-icon-document {
-      color: #409eff;
+      color: var(--museum-primary);
       margin-right: 8px;
       font-size: 16px;
     }
@@ -1190,7 +1190,7 @@ export default {
 
       .chunk-similarity {
         // font-size: 12px;
-        color: #409eff;
+        color: var(--museum-primary);
         white-space: nowrap;
 
         .similarity-label {

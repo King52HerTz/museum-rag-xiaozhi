@@ -500,7 +500,7 @@ export default {
     border: 1px solid #d9e7ff;
     border-radius: 8px;
     background: #f5f9ff;
-    color: #3d4566;
+    color: var(--museum-text);
     text-align: left;
 }
 
@@ -515,7 +515,7 @@ export default {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #5778ff;
+    background: var(--museum-primary);
 }
 
 .rag-audit-count {

@@ -517,7 +517,7 @@ export default {
   display: flex;
   position: relative;
   flex-direction: column;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd);
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca);
   background-size: cover;
   -webkit-background-size: cover;
   -o-background-size: cover;
@@ -559,7 +559,7 @@ export default {
 }
 
 .btn-search {
-  background: linear-gradient(135deg, #6b8cff, #a966ff);
+  background: linear-gradient(135deg, var(--museum-primary), var(--museum-primary-light));
   border: none;
   color: white;
 }
@@ -581,7 +581,7 @@ export default {
   line-height: 32px;
   border-radius: 4px;
   border: 1px solid #e4e7ed;
-  background: #dee7ff;
+  background: var(--museum-primary-soft);
   color: #606266;
   font-size: 14px;
 }
@@ -616,7 +616,7 @@ export default {
 }
 
 ::v-deep .search-input .el-input__inner:focus {
-  border-color: #6b8cff;
+  border-color: var(--museum-primary);
   outline: none;
 }
 
@@ -692,7 +692,7 @@ export default {
 }
 
 .ctrl_btn .el-button--primary {
-  background: #5f70f3;
+  background: var(--museum-primary);
   color: white;
 }
 
@@ -725,7 +725,7 @@ export default {
   padding: 0 12px;
   border-radius: 4px;
   border: 1px solid #e4e7ed;
-  background: #dee7ff;
+  background: var(--museum-primary-soft);
   color: #606266;
   font-size: 14px;
   cursor: pointer;
@@ -762,9 +762,9 @@ export default {
 }
 
 .custom-pagination .pagination-btn.active {
-  background: #5f70f3 !important;
+  background: var(--museum-primary) !important;
   color: #ffffff !important;
-  border-color: #5f70f3 !important;
+  border-color: var(--museum-primary) !important;
 }
 
 .custom-pagination .pagination-btn.active:hover {
@@ -859,8 +859,8 @@ export default {
 }
 
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: #5f70f3 !important;
-  border-color: #5f70f3 !important;
+  background-color: var(--museum-primary) !important;
+  border-color: var(--museum-primary) !important;
 }
 
 ::v-deep .el-table--border::after,
