@@ -9,12 +9,15 @@
             margin-left: 11px;
             gap: 10px;
           ">
-          <img loading="lazy" alt="" src="@/assets/xiaozhi-logo.png" style="width: 42px; height: 42px" />
-          <img loading="lazy" alt="" :src="xiaozhiAiIcon" style="height: 20px" />
+          <img loading="lazy" alt="智博导览" src="@/assets/brand/zhibo-lockup.svg" class="auth-brand" />
         </div>
       </el-header>
       <div class="login-person">
-        <img loading="lazy" alt="" src="@/assets/login/login-person.png" style="width: 100%" />
+        <img loading="lazy" alt="智博导览博物馆展陈图形" src="@/assets/brand/museum-hero.svg" style="width: 100%" />
+        <div class="auth-hero-copy">
+          <strong>让每一件文物，都能被听见</strong>
+          <span>知识库、智能体与导览设备的一体化管理平台</span>
+        </div>
       </div>
       <el-main style="position: relative">
         <div class="login-box" @keyup.enter="login">
@@ -195,24 +198,6 @@ export default {
           return this.$t("language.ptBR");
         default:
           return this.$t("language.zhCN");
-      }
-    },
-    // 根据当前语言获取对应的xiaozhi-ai图标
-    xiaozhiAiIcon() {
-      const currentLang = this.currentLanguage;
-      switch (currentLang) {
-        case "zh_CN":
-          return require("@/assets/xiaozhi-ai.png");
-        case "zh_TW":
-          return require("@/assets/xiaozhi-ai_zh_TW.png");
-        case "en":
-          return require("@/assets/xiaozhi-ai_en.png");
-        case "de":
-          return require("@/assets/xiaozhi-ai_de.png");
-        case "vi":
-          return require("@/assets/xiaozhi-ai_vi.png");
-        default:
-          return require("@/assets/xiaozhi-ai.png");
       }
     },
   },
@@ -409,7 +394,7 @@ export default {
   margin-left: 4px;
   margin-right: 4px;
   font-size: 12px;
-  color: #3d4566;
+  color: var(--museum-text-secondary);
 }
 
 .language-dropdown {
@@ -426,18 +411,18 @@ export default {
 }
 
 :deep(.el-button--primary) {
-  background-color: #5778ff;
-  border-color: #5778ff;
+  background-color: var(--museum-primary);
+  border-color: var(--museum-primary);
 
   &:hover,
   &:focus {
-    background-color: #4a6ae8;
-    border-color: #4a6ae8;
+    background-color: var(--museum-primary-hover);
+    border-color: var(--museum-primary-hover);
   }
 
   &:active {
-    background-color: #3d5cd6;
-    border-color: #3d5cd6;
+    background-color: #8f6534;
+    border-color: #8f6534;
   }
 }
 </style>

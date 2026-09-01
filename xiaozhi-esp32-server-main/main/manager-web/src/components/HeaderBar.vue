@@ -3,8 +3,7 @@
     <div class="header-container">
       <!-- 左侧元素 -->
       <div class="header-left" @click="handleRouter('home')">
-        <img loading="lazy" alt="" src="@/assets/xiaozhi-logo.png" class="logo-img" />
-        <img loading="lazy" alt="" :src="xiaozhiAiIcon" class="brand-img" />
+        <img loading="lazy" alt="智博导览" src="@/assets/brand/zhibo-lockup.svg" class="brand-lockup" />
       </div>
 
       <!-- 中间导航菜单 -->
@@ -294,26 +293,6 @@ export default {
           return this.$t("language.ptBR");
         default:
           return this.$t("language.zhCN");
-      }
-    },
-    // 根据当前语言获取对应的xiaozhi-ai图标
-    xiaozhiAiIcon() {
-      const currentLang = this.currentLanguage;
-      switch (currentLang) {
-        case "zh_CN":
-          return require("@/assets/xiaozhi-ai.png");
-        case "zh_TW":
-          return require("@/assets/xiaozhi-ai_zh_TW.png");
-        case "en":
-          return require("@/assets/xiaozhi-ai_en.png");
-        case "de":
-          return require("@/assets/xiaozhi-ai_de.png");
-        case "vi":
-          return require("@/assets/xiaozhi-ai_vi.png");
-        case "pt_BR":
-          return require("@/assets/xiaozhi-ai_en.png");
-        default:
-          return require("@/assets/xiaozhi-ai.png");
       }
     },
     // 用户菜单选项
@@ -641,9 +620,11 @@ export default {
 
 <style lang="scss" scoped>
 .header {
-  background: #f6fcfe66;
-  border: 1px solid #fff;
-  height: 63px !important;
+  background: rgba(255, 253, 248, 0.96);
+  border: 0;
+  border-bottom: 1px solid var(--museum-border);
+  box-shadow: 0 4px 18px rgba(95, 85, 70, 0.06);
+  height: 68px !important;
   min-width: 900px;
   /* 设置最小宽度防止过度压缩 */
   overflow: visible;
@@ -654,33 +635,31 @@ export default {
   justify-content: space-between;
   align-items: center;
   height: 100%;
-  padding: 0 10px;
+  padding: 0 24px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 120px;
+  min-width: 196px;
   cursor: pointer;
 }
 
-.logo-img {
-  width: 42px;
-  height: 42px;
-}
-
-.brand-img {
-  height: 20px;
+.brand-lockup {
+  width: 176px;
+  height: 50px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .header-center {
   display: flex;
   align-items: center;
-  gap: 25px;
+  gap: 12px;
   position: absolute;
   left: 50%;
-  transform: translateX(calc(-50% - 80px));
+  transform: translateX(-50%);
 }
 
 .header-right {
@@ -692,18 +671,19 @@ export default {
 }
 
 .equipment-management {
-  height: 30px;
-  border-radius: 15px;
-  background: #deeafe;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
   display: flex;
   justify-content: center;
   font-size: 16px;
   font-weight: 500;
   gap: 7px;
-  color: #3d4566;
+  color: var(--museum-text-secondary);
   margin-left: 1px;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: color var(--museum-transition), background-color var(--museum-transition), border-color var(--museum-transition);
   cursor: pointer;
   flex-shrink: 0;
   /* 防止导航按钮被压缩 */
@@ -712,8 +692,14 @@ export default {
 }
 
 .equipment-management.active-tab {
-  background: #5778ff !important;
+  background: var(--museum-primary) !important;
   color: #fff !important;
+}
+
+.equipment-management:not(.active-tab):hover {
+  border-color: var(--museum-border);
+  background: var(--museum-surface-muted);
+  color: var(--museum-text);
 }
 
 .equipment-management img {
