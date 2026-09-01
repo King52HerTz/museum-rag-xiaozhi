@@ -31,6 +31,9 @@
           @select="handleMenuSelect"
           style="background-size: cover; background-position: center"
         >
+          <div class="model-visual" aria-hidden="true">
+            <img src="@/assets/brand/model-config.jpg" alt="" />
+          </div>
           <el-menu-item index="vad">
             <span class="menu-text">{{ $t("modelConfig.vad") }}</span>
           </el-menu-item>
@@ -1170,5 +1173,138 @@ export default {
   color: #6b8cff !important;
   font-size: 14px;
   margin-top: 8px;
+}
+
+/* 智博导览主题覆盖：保留页面结构，只统一视觉语言。 */
+.welcome {
+  background: var(--museum-background);
+}
+
+.main-wrapper {
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-lg);
+  background: var(--museum-surface);
+  box-shadow: var(--museum-shadow-sm);
+}
+
+.page-title {
+  color: var(--museum-text);
+}
+
+.nav-panel {
+  min-width: 258px;
+  padding: 18px 14px;
+  border-right-color: var(--museum-border);
+  background: var(--museum-surface-muted);
+}
+
+.model-visual {
+  height: 124px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(181, 138, 76, 0.24);
+  border-radius: var(--museum-radius-md);
+  background: #fffdf8;
+}
+
+.model-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nav-panel .el-menu-item {
+  width: 100%;
+  height: 42px;
+  margin: 3px 0;
+  padding: 0 14px !important;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  border-radius: 9px !important;
+  color: var(--museum-text-secondary);
+  background: transparent;
+  line-height: 42px;
+}
+
+.nav-panel .el-menu-item:hover {
+  border-color: var(--museum-border);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nav-panel .el-menu-item.is-active {
+  padding-left: 38px !important;
+  color: #fff;
+  background: var(--museum-primary);
+  box-shadow: 0 6px 14px rgba(181, 138, 76, 0.18);
+}
+
+.nav-panel .el-menu-item.is-active::before {
+  left: 15px;
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+}
+
+.menu-text {
+  padding-right: 0;
+  color: inherit;
+  text-align: left;
+}
+
+.content-area,
+.model-card,
+.table-footer,
+:deep(.transparent-table),
+:deep(.transparent-table .el-table__header th),
+:deep(.transparent-table .el-table__body tr) {
+  background: var(--museum-surface);
+}
+
+.btn-search,
+.batch-actions .el-button--primary,
+.batch-actions .el-button:first-child,
+.custom-pagination .pagination-btn.active {
+  border-color: var(--museum-primary) !important;
+  color: #fff !important;
+  background: var(--museum-primary) !important;
+}
+
+.btn-search:hover,
+.batch-actions .el-button--primary:hover,
+.batch-actions .el-button:first-child:hover,
+.custom-pagination .pagination-btn.active:hover {
+  background: var(--museum-primary-hover) !important;
+}
+
+::v-deep .page-size-select .el-input__inner,
+.custom-pagination .pagination-btn:first-child,
+.custom-pagination .pagination-btn:nth-child(2),
+.custom-pagination .pagination-btn:nth-child(3),
+.custom-pagination .pagination-btn:nth-last-child(2) {
+  border-color: var(--museum-border);
+  color: var(--museum-text-secondary);
+  background: var(--museum-surface-muted);
+}
+
+::v-deep .el-checkbox__input.is-checked .el-checkbox__inner,
+::v-deep .el-loading-spinner .path {
+  border-color: var(--museum-primary);
+  background-color: var(--museum-primary);
+  stroke: var(--museum-primary);
+}
+
+::v-deep .el-loading-text,
+.voice-management-btn,
+.edit-btn {
+  color: var(--museum-primary-hover) !important;
+}
+
+.voice-management-btn {
+  border: 1px solid var(--museum-primary-light);
+  background: var(--museum-primary-soft);
+}
+
+.delete-btn {
+  color: var(--museum-danger) !important;
 }
 </style>
