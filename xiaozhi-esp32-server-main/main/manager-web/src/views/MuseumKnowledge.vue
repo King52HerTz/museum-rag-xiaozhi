@@ -4,208 +4,265 @@
     <main class="museum-main">
       <section class="hero-card">
         <div class="hero-copy">
-          <div class="eyebrow">Museum RAG</div>
-          <h1>博物馆知识库</h1>
+          <div class="eyebrow">知识资产中心</div>
+          <h1>湖南省博物馆知识库</h1>
           <p>
-            日常资料上传、处理状态查看和检索测试都在本页完成，不需要再次登录知识库。SuperMew 工作台仅保留为高级维护入口，
-            小智服务端会使用同一套博物馆知识库。
+            统一维护权威资料、跟踪索引状态并验证检索效果。这里的资料将作为智博导览回答文物与展览问题时的事实依据。
           </p>
           <div class="hero-actions">
-            <el-button type="primary" icon="el-icon-right" :loading="workbenchLoading" @click="openWorkbench">
-              进入高级维护工作台
+            <el-button type="primary" icon="el-icon-upload2" @click="activateUpload">
+              上传资料
             </el-button>
-            <el-button icon="el-icon-refresh" @click="fillDemoQuestion">
-              使用演示问题
+            <el-button icon="el-icon-setting" :loading="workbenchLoading" @click="openWorkbench">
+              高级工作台
             </el-button>
           </div>
-          <p v-if="workbenchMessage" class="workbench-message">
-            {{ workbenchMessage }}
-          </p>
+          <el-alert v-if="workbenchMessage" class="workbench-message" :title="workbenchMessage" type="info" :closable="false" />
         </div>
-        <div class="hero-status">
-          <div class="status-title">当前演示配置</div>
-          <div class="status-row">
-            <span>博物馆</span>
-            <strong>{{ queryForm.museum }}</strong>
-          </div>
-          <div class="status-row">
-            <span>展览</span>
-            <strong>{{ queryForm.exhibition }}</strong>
-          </div>
-          <div class="status-row">
-            <span>日常操作</span>
-            <strong>本页完成，无需二次登录</strong>
-          </div>
+        <div class="hero-visual" aria-hidden="true">
+          <img src="@/assets/brand/museum-hero.svg" alt="" />
         </div>
       </section>
 
-      <section class="documents-card">
-        <div class="section-heading documents-heading">
-          <div>
-            <h2>知识库资料</h2>
-            <p>支持 PDF、Word 和 Excel；上传后会在后台解析、分块并建立向量索引。</p>
-          </div>
-          <div class="document-actions">
-            <el-button icon="el-icon-refresh" :loading="documentsLoading" @click="loadDocuments">
-              刷新列表
-            </el-button>
-            <el-upload
-              ref="documentUpload"
-              action="#"
-              :auto-upload="false"
-              :show-file-list="false"
-              :limit="1"
-              accept=".pdf,.doc,.docx,.xls,.xlsx"
-              :on-change="handleDocumentChange"
-              :on-exceed="handleUploadExceed"
-            >
-              <el-button type="primary" icon="el-icon-upload2" :loading="uploadLoading">
-                上传资料
-              </el-button>
-            </el-upload>
-          </div>
-        </div>
-
-        <el-alert
-          v-if="uploadMessage"
-          class="document-alert"
-          :title="uploadMessage"
-          :type="uploadStatus === 'failed' ? 'error' : 'info'"
-          :closable="false"
-          show-icon
-        />
-
-        <div v-if="uploadLoading" class="upload-progress">
-          <div class="upload-progress-title">
-            <span>{{ uploadFilename || '正在处理资料' }}</span>
-            <span>{{ uploadProgress }}%</span>
-          </div>
-          <el-progress :percentage="uploadProgress" :status="uploadStatus === 'failed' ? 'exception' : undefined" />
-          <p>{{ uploadMessage || '正在提交上传任务...' }}</p>
-        </div>
-
-        <el-table
-          v-loading="documentsLoading"
-          :data="documents"
-          stripe
-          class="document-table"
-          empty-text="暂无资料，请先上传博物馆资料"
-        >
-          <el-table-column prop="filename" label="文件名" min-width="280">
-            <template slot-scope="scope">
-              <div class="document-name">
-                <i class="el-icon-document"></i>
-                <span>{{ scope.row.filename }}</span>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="file_type" label="格式" width="90" />
-          <el-table-column prop="chunk_count" label="检索分块" width="110" />
-          <el-table-column label="知识库画像" min-width="220">
-            <template slot-scope="scope">
-              <div class="document-profile">
-                <span>{{ scope.row.museum || queryForm.museum }}</span>
-                <span>{{ scope.row.exhibition || queryForm.exhibition }}</span>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="100" fixed="right">
-            <template slot-scope="scope">
-              <el-button
-                type="text"
-                class="delete-document-button"
-                :loading="deletingFilename === scope.row.filename"
-                @click="deleteDocument(scope.row)"
-              >
-                删除
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+      <section class="summary-grid" aria-label="知识库概览">
+        <article class="summary-card">
+          <span class="summary-label">资料总数</span>
+          <strong>{{ documents.length }}</strong>
+          <small>份权威资料</small>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">检索分块</span>
+          <strong>{{ totalChunks }}</strong>
+          <small>个可检索片段</small>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">知识范围</span>
+          <strong class="summary-scope">马王堆汉墓</strong>
+          <small>{{ exhibitionOptions.length || 1 }} 个展览范围</small>
+        </article>
+        <article class="summary-card" :class="{ 'summary-card-error': documentLoadFailed }">
+          <span class="summary-label">RAG 服务</span>
+          <strong class="summary-status">
+            <i :class="documentLoadFailed ? 'el-icon-warning-outline' : 'el-icon-circle-check'"></i>
+            {{ documentLoadFailed ? '连接异常' : '运行正常' }}
+          </strong>
+          <small>{{ documentLoadFailed ? '请检查稳定版服务' : '资料列表已同步' }}</small>
+        </article>
       </section>
 
-      <section class="query-layout">
-        <div class="query-card">
-          <div class="section-heading">
-            <div>
-              <h2>导览问答测试</h2>
-              <p>通过 manager-api 调用 SuperMew 的 <code>/api/museum/query</code> 检索型接口。</p>
+      <section class="workspace-card">
+        <el-tabs v-model="activeWorkspace" class="workspace-tabs">
+          <el-tab-pane name="documents">
+            <span slot="label"><i class="el-icon-folder-opened"></i> 资料管理</span>
+
+            <div class="section-heading documents-heading">
+              <div>
+                <h2>知识库资料</h2>
+                <p>维护用于导览问答的来源文件。上传完成后，系统会自动解析、分块并建立索引。</p>
+              </div>
+              <div class="document-actions">
+                <el-button icon="el-icon-refresh" :loading="documentsLoading" @click="loadDocuments">刷新</el-button>
+                <el-upload
+                  ref="documentUpload"
+                  action="#"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :limit="1"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                  :on-change="handleDocumentChange"
+                  :on-exceed="handleUploadExceed"
+                >
+                  <el-button ref="uploadButton" type="primary" icon="el-icon-upload2" :loading="uploadLoading">
+                    上传资料
+                  </el-button>
+                </el-upload>
+              </div>
             </div>
-          </div>
 
-          <el-form :model="queryForm" label-position="top" class="query-form">
-            <el-form-item label="游客问题">
+            <el-alert
+              v-if="uploadMessage"
+              class="document-alert"
+              :title="uploadMessage"
+              :type="uploadStatus === 'failed' ? 'error' : uploadStatus === 'completed' ? 'success' : 'info'"
+              :closable="false"
+              show-icon
+            />
+
+            <div v-if="uploadLoading" class="upload-progress">
+              <div class="upload-progress-title">
+                <span>{{ uploadFilename || '正在处理资料' }}</span>
+                <span>{{ uploadProgress }}%</span>
+              </div>
+              <el-progress :percentage="uploadProgress" :status="uploadStatus === 'failed' ? 'exception' : undefined" />
+              <p>{{ uploadMessage || '正在提交上传任务...' }}</p>
+            </div>
+
+            <div class="document-toolbar">
               <el-input
-                v-model="queryForm.question"
-                type="textarea"
-                :rows="4"
-                maxlength="300"
-                show-word-limit
-                placeholder="例如：马王堆汉墓的素纱单衣为什么这么有名？"
-                @keyup.ctrl.enter.native="runQuery"
+                v-model="documentKeyword"
+                clearable
+                prefix-icon="el-icon-search"
+                placeholder="搜索文件名称"
+                aria-label="搜索文件名称"
               />
-            </el-form-item>
-            <div class="form-grid">
-              <el-form-item label="博物馆">
-                <el-input v-model="queryForm.museum" clearable />
-              </el-form-item>
-              <el-form-item label="展览">
-                <el-input v-model="queryForm.exhibition" clearable />
-              </el-form-item>
-              <el-form-item label="返回片段数">
-                <el-input-number v-model="queryForm.top_k" :min="1" :max="10" controls-position="right" />
-              </el-form-item>
+              <el-select v-model="documentExhibition" clearable placeholder="全部展览" aria-label="按展览筛选">
+                <el-option v-for="item in exhibitionOptions" :key="item" :label="item" :value="item" />
+              </el-select>
+              <span class="document-count">显示 {{ filteredDocuments.length }} / {{ documents.length }} 份资料</span>
             </div>
-            <div class="query-actions">
-              <el-button type="primary" icon="el-icon-search" :loading="queryLoading" @click="runQuery">
-                检索测试
-              </el-button>
-              <el-button icon="el-icon-delete" @click="clearResult">
-                清空结果
-              </el-button>
-            </div>
-          </el-form>
-        </div>
 
-        <div class="result-card">
-          <div class="section-heading">
-            <div>
-              <h2>检索结果</h2>
-              <p>这些片段会作为小智导览助手生成讲解话术的依据。</p>
-            </div>
-            <el-tag v-if="queryResult" :type="resultOk ? 'success' : 'warning'">
-              {{ queryResult.message || '已返回' }}
-            </el-tag>
-          </div>
+            <el-table
+              v-loading="documentsLoading"
+              :data="filteredDocuments"
+              stripe
+              class="document-table"
+              empty-text="暂无符合条件的资料"
+            >
+              <el-table-column prop="filename" label="资料名称" min-width="280">
+                <template slot-scope="scope">
+                  <div class="document-name">
+                    <span class="file-icon"><i class="el-icon-document"></i></span>
+                    <div>
+                      <strong>{{ scope.row.filename }}</strong>
+                      <small>{{ (scope.row.file_type || '文件').toUpperCase() }}</small>
+                    </div>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="所属范围" min-width="240">
+                <template slot-scope="scope">
+                  <div class="document-profile">
+                    <strong>{{ scope.row.exhibition || queryForm.exhibition }}</strong>
+                    <span>{{ scope.row.museum || queryForm.museum }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="chunk_count" label="分块数量" width="110" align="center" />
+              <el-table-column label="状态" width="110" align="center">
+                <template>
+                  <span class="status-badge"><i class="el-icon-circle-check"></i> 可检索</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="uploaded_at" label="更新时间" width="170">
+                <template slot-scope="scope">{{ formatDate(scope.row.uploaded_at) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="90" fixed="right" align="center">
+                <template slot-scope="scope">
+                  <el-button
+                    type="text"
+                    class="delete-document-button"
+                    :loading="deletingFilename === scope.row.filename"
+                    @click="deleteDocument(scope.row)"
+                  >删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
 
-          <el-empty v-if="!queryResult && !queryLoading" description="还没有检索结果，先问一个湖南省博物馆问题吧。" />
+          <el-tab-pane name="retrieval">
+            <span slot="label"><i class="el-icon-search"></i> 检索测试</span>
 
-          <div v-if="queryLoading" class="loading-box">
-            <i class="el-icon-loading"></i>
-            <span>正在检索博物馆知识库...</span>
-          </div>
+            <div class="retrieval-layout">
+              <div class="query-card">
+                <div class="section-heading">
+                  <div>
+                    <h2>验证资料召回效果</h2>
+                    <p>输入游客可能提出的问题，确认系统能否找到正确、可靠的资料片段。</p>
+                  </div>
+                </div>
 
-          <div v-if="queryResult && contexts.length === 0 && !queryLoading" class="empty-result">
-            未检索到相关资料。可以先在上方资料列表确认文件是否已完成解析。
-          </div>
-
-          <div v-if="contexts.length > 0" class="context-list">
-            <article v-for="item in contexts" :key="item.index || item.chunk_id || item.content" class="context-item">
-              <div class="context-meta">
-                <span class="context-index">#{{ item.index }}</span>
-                <span>{{ item.title || item.source || '未知来源' }}</span>
-                <span v-if="item.page_number">页码：{{ item.page_number }}</span>
-                <span v-if="formatScore(item)">相关度：{{ formatScore(item) }}</span>
+                <el-form :model="queryForm" label-position="top" class="query-form">
+                  <el-form-item label="检索问题">
+                    <el-input
+                      v-model="queryForm.question"
+                      type="textarea"
+                      :rows="4"
+                      maxlength="300"
+                      show-word-limit
+                      placeholder="例如：黑地彩绘棺的尺寸和装饰有什么特点？"
+                      @keyup.ctrl.enter.native="runQuery"
+                    />
+                  </el-form-item>
+                  <div class="question-suggestions">
+                    <span>试试示例：</span>
+                    <button v-for="item in sampleQuestions" :key="item" type="button" @click="queryForm.question = item">
+                      {{ item }}
+                    </button>
+                  </div>
+                  <button class="advanced-toggle" type="button" @click="showAdvanced = !showAdvanced">
+                    <i :class="showAdvanced ? 'el-icon-arrow-up' : 'el-icon-arrow-down'"></i>
+                    {{ showAdvanced ? '收起检索范围' : '设置检索范围' }}
+                  </button>
+                  <div v-show="showAdvanced" class="form-grid">
+                    <el-form-item label="博物馆">
+                      <el-input v-model="queryForm.museum" clearable />
+                    </el-form-item>
+                    <el-form-item label="展览">
+                      <el-input v-model="queryForm.exhibition" clearable />
+                    </el-form-item>
+                    <el-form-item label="返回片段数">
+                      <el-input-number v-model="queryForm.top_k" :min="1" :max="10" controls-position="right" />
+                    </el-form-item>
+                  </div>
+                  <div class="query-actions">
+                    <el-button type="primary" icon="el-icon-search" :loading="queryLoading" @click="runQuery">
+                      开始检索
+                    </el-button>
+                    <el-button v-if="queryResult" @click="clearResult">清空结果</el-button>
+                  </div>
+                </el-form>
               </div>
-              <p>{{ item.content }}</p>
-            </article>
-          </div>
 
-          <details v-if="queryResult && queryResult.trace" class="trace-box">
-            <summary>查看检索 trace</summary>
-            <pre>{{ prettyTrace }}</pre>
-          </details>
-        </div>
+              <div class="result-card">
+                <div class="section-heading result-heading">
+                  <div>
+                    <h2>召回结果</h2>
+                    <p>结果按相关度排序，回答生成时会引用这些来源片段。</p>
+                  </div>
+                  <el-tag v-if="queryResult" :type="resultTagType" effect="plain">{{ resultLabel }}</el-tag>
+                </div>
+
+                <el-empty v-if="!queryResult && !queryLoading" description="输入问题后，这里将显示命中的权威资料片段。" />
+
+                <div v-if="queryLoading" class="loading-box">
+                  <i class="el-icon-loading"></i>
+                  <div><strong>正在检索知识库</strong><span>正在匹配最相关的资料片段...</span></div>
+                </div>
+
+                <div v-if="queryResult && contexts.length === 0 && !queryLoading" class="empty-result">
+                  <i :class="resultOk ? 'el-icon-search' : 'el-icon-warning-outline'"></i>
+                  <div>
+                    <strong>{{ resultOk ? '未找到直接相关的资料' : '检索服务暂时不可用' }}</strong>
+                    <span>{{ resultOk ? '请确认资料已经完成解析，或尝试使用文物全称重新检索。' : '请检查稳定版 RAG 服务和桥接配置后重试。' }}</span>
+                  </div>
+                </div>
+
+                <div v-if="contexts.length > 0" class="context-list">
+                  <article v-for="item in contexts" :key="item.index || item.chunk_id || item.content" class="context-item">
+                    <header class="context-header">
+                      <span class="context-index">{{ item.index }}</span>
+                      <div class="context-source">
+                        <strong>{{ item.title || item.source || '未知来源' }}</strong>
+                        <span>
+                          <template v-if="item.page_number">第 {{ item.page_number }} 页</template>
+                          <template v-if="formatScore(item)"> · 相关度 {{ formatScore(item) }}</template>
+                        </span>
+                      </div>
+                      <el-tag size="mini" effect="plain">权威资料</el-tag>
+                    </header>
+                    <p>{{ item.content }}</p>
+                  </article>
+                </div>
+
+                <details v-if="queryResult && queryResult.trace" class="trace-box">
+                  <summary><i class="el-icon-setting"></i> 开发诊断信息</summary>
+                  <p>仅用于排查检索链路，普通使用无需查看。</p>
+                  <pre>{{ prettyTrace }}</pre>
+                </details>
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
       </section>
     </main>
   </div>
@@ -215,10 +272,10 @@
 import HeaderBar from "@/components/HeaderBar.vue";
 import Api from "@/apis/api";
 
-const DEMO_QUESTIONS = [
+const SAMPLE_QUESTIONS = [
   "马王堆汉墓的素纱单衣为什么这么有名？",
-  "辛追夫人的发现对研究汉代生活有什么价值？",
-  "湖南省博物馆里马王堆汉墓陈列适合怎么给游客讲解？"
+  "黑地彩绘棺的尺寸和装饰有什么特点？",
+  "T形帛画表现了怎样的汉代宇宙观？"
 ];
 
 export default {
@@ -229,8 +286,12 @@ export default {
       workbenchUrl: (process.env.VUE_APP_MUSEUM_WORKBENCH_URL || "http://127.0.0.1:8000/").trim(),
       workbenchMessage: "",
       workbenchLoading: false,
+      activeWorkspace: "documents",
       documents: [],
       documentsLoading: false,
+      documentLoadFailed: false,
+      documentKeyword: "",
+      documentExhibition: "",
       uploadLoading: false,
       uploadFilename: "",
       uploadProgress: 0,
@@ -241,8 +302,10 @@ export default {
       deletePollTimer: null,
       queryLoading: false,
       queryResult: null,
+      showAdvanced: false,
+      sampleQuestions: SAMPLE_QUESTIONS,
       queryForm: {
-        question: DEMO_QUESTIONS[0],
+        question: SAMPLE_QUESTIONS[0],
         museum: "湖南省博物馆",
         exhibition: "长沙马王堆汉墓陈列",
         top_k: 3,
@@ -261,8 +324,40 @@ export default {
     contexts: function () {
       return (this.queryResult && this.queryResult.contexts) || [];
     },
+    totalChunks: function () {
+      return this.documents.reduce((total, item) => total + Number(item.chunk_count || 0), 0);
+    },
+    exhibitionOptions: function () {
+      return Array.from(new Set(this.documents.map((item) => item.exhibition).filter(Boolean))).sort();
+    },
+    filteredDocuments: function () {
+      const keyword = this.documentKeyword.trim().toLowerCase();
+      return this.documents.filter((item) => {
+        const matchesKeyword = !keyword || String(item.filename || "").toLowerCase().includes(keyword);
+        const matchesExhibition = !this.documentExhibition || item.exhibition === this.documentExhibition;
+        return matchesKeyword && matchesExhibition;
+      });
+    },
     resultOk: function () {
       return this.queryResult && Number(this.queryResult.code) === 0;
+    },
+    resultLabel: function () {
+      if (!this.queryResult) {
+        return "";
+      }
+      if (!this.resultOk) {
+        return "服务异常";
+      }
+      if (this.contexts.length === 0) {
+        return "未命中资料";
+      }
+      return `命中 ${this.contexts.length} 个片段`;
+    },
+    resultTagType: function () {
+      if (!this.resultOk) {
+        return "danger";
+      }
+      return this.contexts.length > 0 ? "success" : "warning";
     },
     prettyTrace: function () {
       return JSON.stringify(this.queryResult.trace || {}, null, 2);
@@ -284,10 +379,12 @@ export default {
         (res) => {
           const data = this.unwrap(res);
           this.documents = Array.isArray(data.documents) ? data.documents : [];
+          this.documentLoadFailed = false;
           this.documentsLoading = false;
         },
         () => {
           this.documents = [];
+          this.documentLoadFailed = true;
           this.documentsLoading = false;
           this.$message.error("获取博物馆知识库资料失败，请检查 RAG 服务是否启动。");
         }
@@ -477,10 +574,15 @@ export default {
         }
       );
     },
-    fillDemoQuestion: function () {
-      const currentIndex = DEMO_QUESTIONS.indexOf(this.queryForm.question);
-      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % DEMO_QUESTIONS.length;
-      this.queryForm.question = DEMO_QUESTIONS[nextIndex];
+    activateUpload: function () {
+      this.activeWorkspace = "documents";
+      this.$nextTick(() => {
+        const upload = this.$refs.documentUpload;
+        const input = upload && upload.$el ? upload.$el.querySelector('input[type="file"]') : null;
+        if (input) {
+          input.click();
+        }
+      });
     },
     runQuery: function () {
       const question = (this.queryForm.question || "").trim();
@@ -529,6 +631,22 @@ export default {
         return String(score);
       }
       return numeric.toFixed(4);
+    },
+    formatDate: function (value) {
+      if (!value) {
+        return "—";
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return String(value);
+      }
+      return new Intl.DateTimeFormat("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(date);
     }
   }
 };
@@ -834,6 +952,457 @@ export default {
   .documents-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+</style>
+
+<style scoped>
+.museum-knowledge-page {
+  min-height: 100vh;
+  background: var(--museum-background);
+}
+
+.museum-main {
+  width: min(1440px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 92px 0 40px;
+}
+
+.hero-card {
+  max-width: none;
+  min-height: 250px;
+  margin: 0 0 20px;
+  padding: 36px 40px;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  align-items: center;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-lg);
+  color: var(--museum-text);
+  background: linear-gradient(110deg, #fffdf8 0%, #f8f5ef 58%, #efe1ca 100%);
+  box-shadow: var(--museum-shadow-sm);
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  border: 1px solid rgba(181, 138, 76, 0.34);
+  color: var(--museum-primary-hover);
+  background: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.hero-copy h1 {
+  color: var(--museum-text);
+  font-size: 36px;
+}
+
+.hero-copy p {
+  color: var(--museum-text-secondary);
+  opacity: 1;
+}
+
+.hero-visual {
+  height: 220px;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.workbench-message {
+  max-width: 640px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  min-height: 112px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-md);
+  background: var(--museum-surface);
+  box-shadow: var(--museum-shadow-sm);
+  text-align: left;
+}
+
+.summary-label,
+.summary-card small {
+  color: var(--museum-text-muted);
+  font-size: 12px;
+}
+
+.summary-card > strong {
+  color: var(--museum-text);
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.summary-card .summary-scope,
+.summary-card .summary-status {
+  font-size: 18px;
+}
+
+.summary-status {
+  color: var(--museum-success) !important;
+}
+
+.summary-card-error .summary-status {
+  color: var(--museum-danger) !important;
+}
+
+.workspace-card {
+  padding: 8px 24px 28px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-lg);
+  background: var(--museum-surface);
+  box-shadow: var(--museum-shadow-sm);
+}
+
+.workspace-tabs::v-deep .el-tabs__header {
+  margin-bottom: 28px;
+}
+
+.workspace-tabs::v-deep .el-tabs__item {
+  height: 58px;
+  padding: 0 24px;
+  color: var(--museum-text-secondary);
+  font-size: 16px;
+  line-height: 58px;
+}
+
+.workspace-tabs::v-deep .el-tabs__item.is-active,
+.workspace-tabs::v-deep .el-tabs__item:hover {
+  color: var(--museum-primary-hover);
+}
+
+.workspace-tabs::v-deep .el-tabs__active-bar {
+  height: 3px;
+  background: var(--museum-primary);
+}
+
+.documents-heading {
+  align-items: center;
+}
+
+.section-heading h2 {
+  color: var(--museum-text);
+}
+
+.section-heading p {
+  color: var(--museum-text-secondary);
+}
+
+.document-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) 240px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin: 20px 0 16px;
+  padding: 14px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-md);
+  background: #fcfaf6;
+}
+
+.document-count {
+  justify-self: end;
+  color: var(--museum-text-muted);
+  font-size: 13px;
+}
+
+.upload-progress {
+  border: 1px solid var(--museum-border);
+  background: #fcfaf6;
+}
+
+.upload-progress-title {
+  color: var(--museum-text);
+}
+
+.document-name {
+  color: var(--museum-text);
+}
+
+.document-name .file-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--museum-primary-hover);
+  background: var(--museum-primary-soft);
+}
+
+.document-name > div,
+.document-profile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.document-name strong {
+  overflow: hidden;
+  color: var(--museum-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-name small,
+.document-profile span {
+  color: var(--museum-text-muted);
+  font-size: 12px;
+}
+
+.document-profile strong {
+  color: var(--museum-text-secondary);
+  font-weight: 500;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--museum-success);
+  background: rgba(47, 133, 90, 0.1);
+  font-size: 12px;
+}
+
+.retrieval-layout {
+  display: grid;
+  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.query-card,
+.result-card {
+  padding: 24px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-md);
+  box-shadow: none;
+}
+
+.query-card {
+  background: #fcfaf6;
+}
+
+.result-card {
+  min-height: 470px;
+  background: var(--museum-surface);
+}
+
+.question-suggestions {
+  margin: -4px 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  color: var(--museum-text-muted);
+  font-size: 12px;
+}
+
+.question-suggestions button,
+.advanced-toggle {
+  padding: 0;
+  border: 0;
+  color: var(--museum-primary-hover);
+  background: transparent;
+  cursor: pointer;
+}
+
+.question-suggestions button:hover,
+.advanced-toggle:hover {
+  text-decoration: underline;
+}
+
+.advanced-toggle {
+  min-height: 40px;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.form-grid {
+  padding: 14px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-sm);
+  background: var(--museum-surface);
+}
+
+.form-grid::v-deep .el-form-item:last-child {
+  margin-bottom: 4px;
+}
+
+.loading-box,
+.empty-result {
+  border-color: var(--museum-border);
+  color: var(--museum-text-secondary);
+  background: #fcfaf6;
+}
+
+.loading-box > i,
+.empty-result > i {
+  color: var(--museum-primary);
+  font-size: 26px;
+}
+
+.loading-box > div,
+.empty-result > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+
+.loading-box strong,
+.empty-result strong {
+  color: var(--museum-text);
+}
+
+.loading-box span,
+.empty-result span {
+  color: var(--museum-text-muted);
+  font-size: 13px;
+}
+
+.context-item {
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--museum-border);
+  border-radius: var(--museum-radius-md);
+  background: #fffdf9;
+}
+
+.context-header {
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  border-bottom: 1px solid var(--museum-border);
+  background: #fcfaf6;
+}
+
+.context-index {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--museum-primary);
+}
+
+.context-source {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.context-source strong {
+  overflow: hidden;
+  color: var(--museum-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-source span {
+  color: var(--museum-text-muted);
+  font-size: 12px;
+}
+
+.context-item > p {
+  padding: 16px;
+  color: var(--museum-text);
+}
+
+.trace-box {
+  padding-top: 15px;
+  border-top: 1px solid var(--museum-border);
+  color: var(--museum-text-secondary);
+}
+
+.trace-box summary {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--museum-text-secondary);
+}
+
+.trace-box > p {
+  margin: 0 0 8px;
+  color: var(--museum-text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .hero-card,
+  .retrieval-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-visual {
+    display: none;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .museum-main {
+    width: calc(100% - 24px);
+  }
+
+  .hero-card {
+    padding: 26px 22px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-card {
+    padding: 4px 14px 20px;
+  }
+
+  .documents-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .document-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .document-count {
+    justify-self: start;
   }
 }
 </style>
