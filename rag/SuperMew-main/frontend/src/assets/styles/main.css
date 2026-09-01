@@ -1000,6 +1000,147 @@ span.cite-ref:hover {
     background-color: rgba(255, 255, 255, 0.15);
 }
 
+.history-notice {
+    margin: 4px 5px 12px;
+    padding: 10px 12px;
+    border: 1px solid #d8e5d2;
+    border-radius: 12px;
+    background: #f3f8f0;
+    color: #54714c;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+
+.history-notice.error {
+    border-color: #ead4ca;
+    background: #fbf2ee;
+    color: #a35c4d;
+}
+
+/* In-app confirmation dialog */
+.museum-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(40, 35, 29, 0.42);
+    backdrop-filter: blur(5px);
+}
+
+.museum-dialog-panel {
+    width: min(420px, 100%);
+    padding: 28px;
+    border: 1px solid rgba(181, 138, 76, 0.26);
+    border-radius: 22px;
+    outline: none;
+    background: #fffdf9;
+    box-shadow: 0 24px 70px rgba(52, 42, 29, 0.24);
+}
+
+.museum-dialog-icon {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 18px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: #f7e7df;
+    color: #b45e50;
+    font-size: 1.05rem;
+}
+
+.museum-dialog-eyebrow {
+    margin-bottom: 6px;
+    color: var(--primary-color) !important;
+    font-size: 0.75rem !important;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.museum-dialog-copy h3 {
+    color: #4e4437;
+    font-size: 1.22rem;
+    line-height: 1.4;
+}
+
+.museum-dialog-copy > p:last-child {
+    margin-top: 10px;
+    color: #817768;
+    font-size: 0.92rem;
+    line-height: 1.7;
+}
+
+.museum-dialog-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.museum-dialog-btn {
+    min-width: 96px;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.museum-dialog-btn.secondary {
+    border-color: #ded6c9;
+    background: #fff;
+    color: #665d50;
+}
+
+.museum-dialog-btn.secondary:hover {
+    border-color: var(--primary-light);
+    background: #faf6ee;
+}
+
+.museum-dialog-btn.danger {
+    background: #ad5e50;
+    color: #fff;
+    box-shadow: 0 7px 18px rgba(173, 94, 80, 0.2);
+}
+
+.museum-dialog-btn.danger:hover:not(:disabled) {
+    background: #964d42;
+    transform: translateY(-1px);
+}
+
+.museum-dialog-btn:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.museum-dialog-enter-active,
+.museum-dialog-leave-active {
+    transition: opacity 0.18s ease;
+}
+
+.museum-dialog-enter-active .museum-dialog-panel,
+.museum-dialog-leave-active .museum-dialog-panel {
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.museum-dialog-enter-from,
+.museum-dialog-leave-to {
+    opacity: 0;
+}
+
+.museum-dialog-enter-from .museum-dialog-panel,
+.museum-dialog-leave-to .museum-dialog-panel {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+}
+
 /* Settings Panel */
 .settings-panel {
     width: 100%;
