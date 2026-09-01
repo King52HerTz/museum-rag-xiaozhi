@@ -169,13 +169,25 @@ button,
   color: var(--museum-text-secondary);
 }
 
-.el-dropdown-menu__item:hover,
-.el-dropdown-menu__item:focus,
+.el-dropdown-menu__item:not(.is-disabled):hover,
+.el-dropdown-menu__item:not(.is-disabled):focus,
 .el-select-dropdown__item.hover,
 .el-cascader-node:not(.is-disabled):focus,
 .el-cascader-node:not(.is-disabled):hover {
-  color: var(--museum-primary-hover);
-  background: var(--museum-surface-muted);
+  color: var(--museum-primary-hover) !important;
+  background: var(--museum-primary-soft) !important;
+}
+
+.el-dropdown-menu__item.is-disabled,
+.el-select-dropdown__item.is-disabled {
+  color: var(--museum-text-muted) !important;
+}
+
+.el-select-dropdown__item.selected,
+.el-cascader-node.in-active-path,
+.el-cascader-node.is-active,
+.el-cascader-node.is-selectable.in-checked-path {
+  color: var(--museum-primary-hover) !important;
 }
 
 .el-alert--info.is-light {
