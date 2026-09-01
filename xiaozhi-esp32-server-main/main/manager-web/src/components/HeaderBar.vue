@@ -73,15 +73,6 @@
           }" />
           <span class="nav-text">{{ $t("header.modelConfig") }}</span>
         </div>
-        <div v-if="featureStatus.knowledgeBase" class="equipment-management"
-          :class="{ 'active-tab': $route.path === '/knowledge-base-management' || $route.path === '/knowledge-file-upload' }"
-          @click="handleRouter('knowledgeBaseManagement')">
-          <img loading="lazy" alt="" src="@/assets/header/knowledge_base.png" :style="{
-            filter:
-              $route.path === '/knowledge-base-management' || $route.path === '/knowledge-file-upload' ? 'brightness(0) invert(1)' : 'None',
-          }" />
-          <span class="nav-text">{{ $t("header.knowledgeBase") }}</span>
-        </div>
         <div class="equipment-management"
           :class="{ 'active-tab': $route.path === '/museum-knowledge' }"
           @click="handleRouter('museumKnowledge')">
@@ -89,7 +80,7 @@
             filter:
               $route.path === '/museum-knowledge' ? 'brightness(0) invert(1)' : 'None',
           }" />
-          <span class="nav-text">博物馆知识库</span>
+          <span class="nav-text">知识库</span>
         </div>
         <div v-if="featureStatus.addressBook" class="equipment-management"
           :class="{ 'active-tab': $route.path === '/address-book-management' }"
@@ -245,7 +236,6 @@ export default {
       routerPaths: {
         home: "/home",
         modelConfig: "/model-config",
-        knowledgeBaseManagement: "/knowledge-base-management",
         museumKnowledge: "/museum-knowledge",
         addressBookManagement: "/address-book-management",
         voiceCloneManagement: "/voice-clone-management",
@@ -266,7 +256,6 @@ export default {
     ...mapState({
       featureStatus: (state) => ({
         voiceClone: state.pubConfig.systemWebMenu?.features?.voiceClone?.enabled, // 音色克隆功能状态
-        knowledgeBase: state.pubConfig.systemWebMenu?.features?.knowledgeBase?.enabled, // 知识库功能状态
         addressBook: state.pubConfig.systemWebMenu?.features?.addressBook?.enabled, // 通讯录功能状态
       }),
       userInfo: (state) => state.userInfo,
