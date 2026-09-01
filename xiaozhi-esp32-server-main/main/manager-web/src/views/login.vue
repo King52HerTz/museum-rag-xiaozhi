@@ -109,7 +109,7 @@
                 font-weight: 400;
                 font-size: 14px;
                 text-align: left;
-                color: #5778ff;
+                color: var(--museum-primary-hover);
                 display: flex;
                 justify-content: space-between;
                 margin-top: 20px;
@@ -139,11 +139,11 @@
           </div>
           <div style="font-size: 14px; color: #979db1">
             {{ $t("login.agreeTo") }}
-            <div style="display: inline-block; color: #5778ff; cursor: pointer" @click="openPage('/user-agreement.html')">
+            <div style="display: inline-block; color: var(--museum-primary-hover); cursor: pointer" @click="openPage('/user-agreement.html')">
               {{ $t("login.userAgreement") }}
             </div>
             {{ $t("login.and") }}
-            <div style="display: inline-block; color: #5778ff; cursor: pointer" @click="openPage('/privacy-policy.html')">
+            <div style="display: inline-block; color: var(--museum-primary-hover); cursor: pointer" @click="openPage('/privacy-policy.html')">
               {{ $t("login.privacyPolicy") }}
             </div>
           </div>

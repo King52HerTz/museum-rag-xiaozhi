@@ -70,7 +70,7 @@
               </div>
 
               <!-- 修改底部链接 -->
-              <div style="font-weight: 400;font-size: 14px;text-align: left;color: #5778ff;margin-top: 20px;">
+              <div style="font-weight: 400;font-size: 14px;text-align: left;color: var(--museum-primary-hover);margin-top: 20px;">
                 <div style="cursor: pointer;" @click="goToLogin">{{ $t('retrievePassword.goToLogin') }}</div>
               </div>
             </div>
@@ -81,9 +81,9 @@
             <!-- 保持相同的协议声明 -->
             <div style="font-size: 14px;color: #979db1;">
               {{ $t('retrievePassword.agreeTo') }}
-              <div style="display: inline-block;color: #5778FF;cursor: pointer;" @click="openPage('/user-agreement.html')">{{ $t('register.userAgreement') }}</div>
+              <div style="display: inline-block;color: var(--museum-primary-hover);cursor: pointer;" @click="openPage('/user-agreement.html')">{{ $t('register.userAgreement') }}</div>
               {{ $t('login.and') }}
-              <div style="display: inline-block;color: #5778FF;cursor: pointer;" @click="openPage('/privacy-policy.html')">{{ $t('register.privacyPolicy') }}</div>
+              <div style="display: inline-block;color: var(--museum-primary-hover);cursor: pointer;" @click="openPage('/privacy-policy.html')">{{ $t('register.privacyPolicy') }}</div>
             </div>
           </div>
         </form>

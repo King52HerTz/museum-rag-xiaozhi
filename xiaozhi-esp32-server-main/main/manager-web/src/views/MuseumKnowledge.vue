@@ -1107,6 +1107,11 @@ export default {
   color: var(--museum-text-secondary);
 }
 
+.section-heading code {
+  color: var(--museum-primary-hover);
+  background: var(--museum-primary-soft);
+}
+
 .document-toolbar {
   display: grid;
   grid-template-columns: minmax(240px, 360px) 240px 1fr;
@@ -1338,6 +1343,10 @@ export default {
 .context-item > p {
   padding: 16px;
   color: var(--museum-text);
+}
+
+.context-meta {
+  color: var(--museum-text-muted);
 }
 
 .trace-box {

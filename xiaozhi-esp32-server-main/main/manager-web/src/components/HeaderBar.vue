@@ -678,6 +678,8 @@ export default {
 .equipment-management.active-tab {
   background: var(--museum-primary) !important;
   color: #fff !important;
+  border-color: var(--museum-primary) !important;
+  box-shadow: 0 6px 14px rgba(181, 138, 76, 0.2);
 }
 
 .equipment-management:not(.active-tab):hover {
@@ -687,8 +689,16 @@ export default {
 }
 
 .equipment-management img {
-  width: 15px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: grayscale(1) sepia(0.55) saturate(1.3) hue-rotate(352deg) !important;
+  opacity: 0.82;
+}
+
+.equipment-management.active-tab img {
+  filter: brightness(0) invert(1) !important;
+  opacity: 1;
 }
 
 .search-container {
@@ -708,9 +718,9 @@ export default {
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #e4e6ef;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--museum-border);
+  border-radius: 10px;
+  box-shadow: var(--museum-shadow-md);
   z-index: 1000;
   margin-top: 2px;
 }
@@ -720,9 +730,9 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--museum-border);
   font-size: 12px;
-  color: #909399;
+  color: var(--museum-text-muted);
 }
 
 .clear-history-btn {
@@ -748,11 +758,11 @@ export default {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 12px;
-  color: #606266;
+  color: var(--museum-text-secondary);
 }
 
 .search-history-item:hover {
-  background-color: #f5f7fa;
+  background-color: var(--museum-surface-muted);
 }
 
 .clear-item-icon {
@@ -782,22 +792,22 @@ export default {
 }
 
 .custom-search-input>>>.el-input__inner {
-  height: 18px;
-  border-radius: 9px;
+  height: 36px;
+  border-radius: 10px;
   background-color: #fff;
-  border: 1px solid #e4e6ef;
-  padding-left: 8px;
-  font-size: 9px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--museum-border);
+  padding-left: 12px;
+  font-size: 13px;
+  box-shadow: none;
   width: 100%;
 }
 
 .search-icon {
   cursor: pointer;
-  color: #909399;
-  margin-right: 3px;
-  font-size: 9px;
-  line-height: 18px;
+  color: var(--museum-primary-hover);
+  margin-right: 6px;
+  font-size: 14px;
+  line-height: 36px;
 }
 
 .custom-search-input::v-deep .el-input__suffix-inner {
