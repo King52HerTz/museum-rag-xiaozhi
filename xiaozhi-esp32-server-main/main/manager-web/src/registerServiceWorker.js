@@ -1,7 +1,28 @@
 /* eslint-disable no-console */
 
 export const register = () => {
-  if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    window.addEventListener('load', async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration => registration.unregister()));
+
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+      }
+
+      if (registrations.length > 0) {
+        console.info('[智博导览服务] 已清理本地开发环境的旧版离线缓存');
+      }
+    });
+    return;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
     window.addEventListener('load', () => {
       const swUrl = `${process.env.BASE_URL}service-worker.js`;
       

@@ -11,6 +11,36 @@
   <title>
     <%= process.env.VUE_APP_TITLE %>
   </title>
+  <script>
+    (function clearLocalDevelopmentCache() {
+      if (window.location.port !== '8001' || !('serviceWorker' in navigator) || !('caches' in window)) {
+        return;
+      }
+
+      var resetKey = 'museum-dev-cache-reset-20260902';
+      if (sessionStorage.getItem(resetKey)) {
+        return;
+      }
+
+      Promise.all([navigator.serviceWorker.getRegistrations(), caches.keys()])
+        .then(function (result) {
+          var registrations = result[0];
+          var cacheNames = result[1];
+          return Promise.all(
+            registrations.map(function (registration) { return registration.unregister(); })
+              .concat(cacheNames.map(function (cacheName) { return caches.delete(cacheName); }))
+          ).then(function () {
+            sessionStorage.setItem(resetKey, 'done');
+            if (registrations.length || cacheNames.length) {
+              window.location.reload();
+            }
+          });
+        })
+        .catch(function () {
+          sessionStorage.setItem(resetKey, 'done');
+        });
+    })();
+  </script>
   <% if (htmlWebpackPlugin.options.cdn && htmlWebpackPlugin.options.cdn.css) { %>
     <% for (var i in htmlWebpackPlugin.options.cdn.css) { %>
       <link rel="stylesheet" href="<%= htmlWebpackPlugin.options.cdn.css[i] %>">
