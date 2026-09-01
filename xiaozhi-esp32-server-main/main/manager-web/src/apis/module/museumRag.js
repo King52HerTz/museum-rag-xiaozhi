@@ -46,9 +46,15 @@ export default {
     });
   },
 
-  uploadDocument(file, callback, errorCallback) {
+  uploadDocument(file, metadata = {}, callback, errorCallback) {
     const formData = new FormData();
     formData.append('file', file);
+    Object.keys(metadata || {}).forEach((key) => {
+      const value = metadata[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        formData.append(key, value);
+      }
+    });
     request({
       url: `${getServiceUrl()}/museum/rag/documents/upload`,
       method: 'POST',

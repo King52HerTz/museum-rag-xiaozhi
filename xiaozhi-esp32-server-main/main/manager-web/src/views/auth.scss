@@ -5,7 +5,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #f5f8fd, #6baaff, #9ebbfc, #f5f8fd);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(216, 182, 122, 0.28), transparent 28%),
+    radial-gradient(circle at 85% 12%, rgba(217, 231, 244, 0.7), transparent 30%),
+    linear-gradient(145deg, #fffdf8, #f8f5ef 54%, #efe1ca);
   background-size: cover;
   /* 确保背景图像覆盖整个元素 */
   background-position: center;
@@ -20,7 +23,7 @@
   font-weight: 700;
   font-size: 25px;
   text-align: left;
-  color: #3d4566;
+  color: var(--museum-text);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -29,7 +32,7 @@
   font-weight: 400;
   font-size: 9px;
   text-align: left;
-  color: #818cae;
+  color: var(--museum-text-muted);
   align-self: flex-end;
   margin-bottom: 7px;
 }
@@ -40,17 +43,19 @@
   transform: translateY(-50%);
   right: 18%;
   background-color: #fff;
+  border: 1px solid rgba(231, 221, 205, 0.9);
   border-radius: 20px;
   padding: 35px 0;
   width: 450px;
   box-sizing: border-box;
+  box-shadow: var(--museum-shadow-md);
 }
 
 .el-dropdown-link {
   font-weight: 400;
   font-size: 14px;
   text-align: left;
-  color: #979db1;
+  color: var(--museum-text-muted);
 }
 
 .input-icon {
@@ -61,7 +66,7 @@
 
 .login-btn {
   height: 35px;
-  background: #5778ff;
+  background: var(--museum-primary);
   border-radius: 10px;
   font-weight: 400;
   font-size: 14px;
@@ -76,7 +81,7 @@
   margin-top: 20px;
   align-items: center;
   border-radius: 10px;
-  border: 1px solid #e4e6ef;
+  border: 1px solid var(--museum-border);
   height: 40px;
   padding: 0 15px;
   gap: 20px;
@@ -102,11 +107,11 @@
     height: 65px;
     line-height: 65px;
     font-weight: 700;
-    color: #3d4566;
+    color: var(--museum-text-secondary);
   }
 
   .el-tabs__item.is-active {
-    color: #5778ff;
+    color: var(--museum-primary-hover);
   }
 
   .el-tabs__nav-scroll {
@@ -122,11 +127,41 @@
 }
 
 .login-person {
-  width: 500px;
-  color: #fff;
+  width: 560px;
+  color: var(--museum-text);
   position: absolute;
   top: 50%;
   left: 25%;
   transform: translate(-50%, -50%);
   z-index: 1;
+}
+
+.auth-hero-image {
+  width: 100%;
+  height: 260px;
+  margin-top: 22px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-lg);
+  object-fit: cover;
+  object-position: center;
+  box-shadow: var(--museum-shadow-md);
+}
+
+.auth-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.auth-hero-copy strong {
+  color: var(--museum-text);
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+.auth-hero-copy span {
+  color: var(--museum-text-secondary);
+  font-size: 15px;
 }

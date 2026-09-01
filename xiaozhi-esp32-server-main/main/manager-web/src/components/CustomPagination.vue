@@ -54,7 +54,7 @@ export default {
     min-width: 36px !important;
   }
   .el-pager li:not(.disabled).active {
-    background: linear-gradient(135deg, #2a6dfe 0%, #6b8cff 50%, #2a6dfe 100%) !important;
+    background: linear-gradient(135deg, var(--museum-primary-hover) 0%, var(--museum-primary) 50%, var(--museum-primary-hover) 100%) !important;
     border-radius: 6px;
     box-shadow: 0 1px 3px rgba(45, 111, 254, 0.3);
     color: #fff;

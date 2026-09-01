@@ -27,6 +27,9 @@ class RagTraceFields(StrictSchema):
     tool_used: Optional[bool] = None
     tool_name: Optional[str] = None
     query: Optional[str] = None
+    retrieval_outcome: Optional[
+        Literal["ANSWERABLE", "NO_KNOWLEDGE", "INSUFFICIENT_EVIDENCE"]
+    ] = None
 
     # 本地现有的 Step-back / HyDE 字段
     expanded_query: Optional[str] = None
@@ -55,6 +58,11 @@ class RagTraceFields(StrictSchema):
     evidence_ambiguity: Optional[str] = None
     evidence_confidence: Optional[float] = None
     evidence_reason: Optional[str] = None
+    grader_evidence_characters: Optional[int] = Field(default=None, ge=0)
+    grader_evidence_omitted_count: Optional[int] = Field(default=None, ge=0)
+    grader_evidence_truncated_count: Optional[int] = Field(default=None, ge=0)
+    coverage_gap_codes: Optional[List[str]] = None
+    coverage_gap_questions: Optional[List[str]] = None
     missing_slots: Optional[List[str]] = None
     hitl_prompt: Optional[str] = None
     hitl_options: Optional[List[str]] = None
@@ -69,6 +77,8 @@ class RagTraceFields(StrictSchema):
     rerank_model: Optional[str] = None
     rerank_endpoint: Optional[str] = None
     rerank_error: Optional[str] = None
+    rerank_error_code: Optional[str] = None
+    rerank_retryable: Optional[bool] = None
     rerank_timeout_seconds: Optional[float] = None
     rerank_min_score: Optional[float] = None
     post_rerank_count: Optional[int] = None
@@ -77,6 +87,9 @@ class RagTraceFields(StrictSchema):
 
     retrieval_mode: Optional[str] = None
     retrieval_pipeline: Optional[str] = None
+    retrieval_degraded_code: Optional[str] = None
+    provider_error_code: Optional[str] = None
+    provider_error_stage: Optional[str] = None
     candidate_k: Optional[int] = None
     candidate_k_source: Optional[str] = None
     candidate_k_config_error: Optional[str] = None

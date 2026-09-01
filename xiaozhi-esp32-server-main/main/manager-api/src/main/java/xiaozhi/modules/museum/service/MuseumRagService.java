@@ -90,9 +90,12 @@ public class MuseumRagService {
         return get("/documents/upload/jobs/" + encodePath(jobId));
     }
 
-    public Object uploadDocument(MultipartFile file) {
+    public Object uploadDocument(MultipartFile file, String museum, String exhibition) {
         File tempFile = null;
         try {
+            if (file == null || file.isEmpty()) {
+                throw new RenException("上传文件不能为空");
+            }
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null || originalFilename.trim().isEmpty()) {
                 throw new RenException("文件名不能为空");
@@ -100,11 +103,17 @@ public class MuseumRagService {
             tempFile = File.createTempFile("museum-rag-upload-", "-" + originalFilename);
             file.transferTo(tempFile);
 
-            HttpResponse response = HttpRequest.post(url("/documents/upload/async"))
+            HttpRequest request = HttpRequest.post(url("/documents/upload/async"))
                     .timeout(timeout)
                     .bearerAuth(getAccessToken())
-                    .form("file", tempFile, originalFilename)
-                    .execute();
+                    .form("file", tempFile, originalFilename);
+            if (museum != null && !museum.isBlank()) {
+                request.form("museum", museum.trim());
+            }
+            if (exhibition != null && !exhibition.isBlank()) {
+                request.form("exhibition", exhibition.trim());
+            }
+            HttpResponse response = request.execute();
             return parseResponse(response, "上传文档失败");
         } catch (RenException e) {
             throw e;

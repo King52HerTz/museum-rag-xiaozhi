@@ -4,7 +4,7 @@
     <div style="margin: 0 18px; text-align: left; padding: 10px; border-radius: 10px">
       <div style="
           font-size: 30px;
-          color: #3d4566;
+          color: var(--museum-text);
           margin-top: -10px;
           margin-bottom: 10px;
           text-align: center;
@@ -24,7 +24,7 @@
           align-items: center;
           margin-bottom: 10px;
         ">
-        <div style="font-size: 20px; font-weight: bold; color: #3d4566">
+        <div style="font-size: 20px; font-weight: bold; color: var(--museum-text)">
           {{ $t("modelConfigDialog.modelInfo") }}
         </div>
         <div style="display: flex; align-items: center; gap: 20px">
@@ -79,7 +79,7 @@
         </el-form-item>
       </el-form>
 
-      <div style="font-size: 20px; font-weight: bold; color: #3d4566; margin-bottom: 15px">
+      <div style="font-size: 20px; font-weight: bold; color: var(--museum-text); margin-bottom: 15px">
         {{ $t("modelConfigDialog.callInfo") }}
       </div>
       <div style="height: 2px; background: #e9e9e9; margin-bottom: 22px"></div>
@@ -521,8 +521,8 @@ export default {
 }
 
 .custom-close-btn:hover {
-  color: #409eff;
-  border-color: #409eff;
+  color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 .custom-select .el-input__suffix {
@@ -561,7 +561,7 @@ export default {
 }
 
 .custom-form .el-form-item__label {
-  color: #3d4566;
+  color: var(--museum-text);
   font-weight: normal;
   text-align: right;
   padding-right: 20px;
@@ -639,7 +639,7 @@ export default {
 }
 
 .custom-form .el-form-item__label {
-  color: #3d4566;
+  color: var(--museum-text);
   font-weight: normal;
   text-align: right;
   padding-right: 20px;

@@ -593,8 +593,8 @@ export default {
 }
 
 .custom-close-btn:hover {
-  color: #409EFF;
-  border-color: #409EFF;
+  color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 /* 备注文本 */
@@ -609,7 +609,7 @@ export default {
 }
 
 ::v-deep .remark-input .el-textarea__inner:focus {
-  border-color: #409EFF !important;
+  border-color: var(--museum-primary) !important;
   outline: none;
 }
 
@@ -707,7 +707,7 @@ export default {
 .edit-btn:hover,
 .delete-btn:hover,
 .save-btn:hover {
-  color: #5f70f3 !important;
+  color: var(--museum-primary) !important;
   transform: scale(1.05);
 }
 

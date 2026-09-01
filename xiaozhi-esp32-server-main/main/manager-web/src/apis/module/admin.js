@@ -58,7 +58,7 @@ export default {
             }).send()
     },
     // 获取参数列表
-    getParamsList(params, callback) {
+    getParamsList(params, callback, failCallback) {
         const queryParams = new URLSearchParams({
             page: params.page,
             limit: params.limit,
@@ -72,10 +72,16 @@ export default {
                 RequestService.clearRequestTime()
                 callback(res)
             })
+            .fail((err) => {
+                RequestService.clearRequestTime()
+                if (typeof failCallback === 'function') {
+                    failCallback(err)
+                }
+            })
             .networkFail((err) => {
                 console.error('获取参数列表失败:', err)
                 RequestService.reAjaxFun(() => {
-                    this.getParamsList(params, callback)
+                    this.getParamsList(params, callback, failCallback)
                 })
             }).send()
     },

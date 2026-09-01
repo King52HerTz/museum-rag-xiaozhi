@@ -6,12 +6,15 @@
         {{ device.agentName }}
       </div>
     </el-tooltip>
-      <div>
-        <img src="@/assets/home/delete.png" alt="" style="width: 18px;height: 18px;margin-right: 10px;"
-          @click.stop="handleDelete" />
+      <div class="card-actions">
+        <button class="card-action card-action--danger" type="button" aria-label="删除智能体" @click.stop="handleDelete">
+          <i class="el-icon-delete"></i>
+        </button>
         <el-tooltip class="item" effect="light" :content="device.systemPrompt" placement="top"
-          popper-class="device-item-tooltip"> 
-          <img src="@/assets/home/info.png" alt="" style="width: 18px;height: 18px;" />
+          popper-class="device-item-tooltip">
+          <button class="card-action" type="button" aria-label="查看智能体说明">
+            <i class="el-icon-info"></i>
+          </button>
         </el-tooltip>
       </div>
     </div>
@@ -119,15 +122,24 @@ export default {
 <style lang="scss" scoped>
 .device-item {
   width: 342px;
-  border-radius: 20px;
-  background: #fafcfe;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-lg);
+  background: var(--museum-surface);
   padding: 22px 22px 14px;
   box-sizing: border-box;
+  box-shadow: var(--museum-shadow-sm);
+  transition: transform var(--museum-transition), box-shadow var(--museum-transition);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--museum-shadow-md);
+  }
+
   &-title {
     flex: 1;
     font-weight: bold;
     font-size: 18px;
-    color: #3d4566;
+    color: var(--museum-text);
     text-align: left;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -139,21 +151,51 @@ export default {
   margin: 7px 0 10px;
   font-weight: 400;
   font-size: 11px;
-  color: #3d4566;
+  color: var(--museum-text-secondary);
   text-align: left;
 }
 
 .settings-btn {
   font-weight: 500;
   font-size: 12px;
-  color: #5778ff;
-  background: #e6ebff;
+  color: var(--museum-primary-hover);
+  background: var(--museum-primary-soft);
   width: auto;
   padding: 0 12px;
   height: 21px;
   line-height: 21px;
   cursor: pointer;
   border-radius: 14px;
+
+  &:hover {
+    color: #fff;
+    background: var(--museum-primary);
+  }
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.card-action {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--museum-border);
+  border-radius: 8px;
+  color: var(--museum-primary-hover);
+  background: var(--museum-surface-muted);
+  cursor: pointer;
+}
+
+.card-action:hover {
+  border-color: var(--museum-primary-light);
+  background: var(--museum-primary-soft);
+}
+
+.card-action--danger {
+  color: var(--museum-danger);
 }
 
 .version-info {
@@ -162,7 +204,7 @@ export default {
   align-items: center;
   margin-top: 15px;
   font-size: 12px;
-  color: #979db1;
+  color: var(--museum-text-muted);
   font-weight: 400;
   &-scroll {
     margin-left: 20px;
@@ -186,8 +228,8 @@ export default {
 }
 
 .disabled-btn {
-  background: #e6e6e6;
-  color: #999;
+  background: #efede8;
+  color: var(--museum-text-muted);
   cursor: not-allowed;
 }
 </style>

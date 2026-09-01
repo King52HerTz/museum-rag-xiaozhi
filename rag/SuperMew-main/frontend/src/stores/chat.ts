@@ -64,9 +64,7 @@ export const useChatStore = defineStore('chat', {
     },
 
     handleClearChat() {
-      if (confirm('确定要清空当前对话吗？')) {
-        this.messages = [];
-      }
+      this.messages = [];
     },
 
     async loadSession(sessionId: string) {

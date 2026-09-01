@@ -7,8 +7,10 @@ import requests
 from backend.indexing.milvus_client import get_milvus_store
 from backend.indexing.embedding import embedding_service as _embedding_service
 from backend.indexing.parent_chunk_store import ParentChunkStore
+from backend.infra.provider_errors import classify_provider_error
 from langchain.chat_models import init_chat_model
 from pydantic import BaseModel, Field
+from backend.rag.structured_output import with_structured_output
 
 
 def _optional_env(name: str) -> Optional[str]:
@@ -66,6 +68,9 @@ RERANK_MIN_SCORE = _read_float_env("RERANK_MIN_SCORE", 0.0)
 RETRIEVAL_TRACE_FIELDS = (
     "retrieval_pipeline",
     "retrieval_mode",
+    "retrieval_degraded_code",
+    "provider_error_code",
+    "provider_error_stage",
     "candidate_k",
     "candidate_k_source",
     "candidate_k_config_error",
@@ -85,6 +90,8 @@ RETRIEVAL_TRACE_FIELDS = (
     "rerank_model",
     "rerank_endpoint",
     "rerank_error",
+    "rerank_error_code",
+    "rerank_retryable",
     "rerank_timeout_seconds",
     "rerank_min_score",
     "post_rerank_count",
@@ -303,6 +310,8 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
         "rerank_model": RERANK_MODEL,
         "rerank_endpoint": _get_rerank_endpoint(),
         "rerank_error": None,
+        "rerank_error_code": None,
+        "rerank_retryable": None,
         "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
         "candidate_count": len(docs_with_rank),
     }
@@ -330,7 +339,12 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
             timeout=RERANK_TIMEOUT_SECONDS,
         )
         if response.status_code >= 400:
-            meta["rerank_error"] = f"HTTP {response.status_code}: {response.text}"
+            public_error = classify_provider_error(
+                RuntimeError(f"status code: {response.status_code}")
+            )
+            meta["rerank_error"] = public_error.code
+            meta["rerank_error_code"] = public_error.code
+            meta["rerank_retryable"] = public_error.retryable
             return _sort_by_rank_score(docs_with_rank)[:top_k], meta
 
         items = response.json().get("results", [])
@@ -347,10 +361,15 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
         if reranked:
             return reranked[:top_k], meta
 
-        meta["rerank_error"] = "empty_rerank_results"
+        meta["rerank_error"] = "RERANK_EMPTY_RESPONSE"
+        meta["rerank_error_code"] = "RERANK_EMPTY_RESPONSE"
+        meta["rerank_retryable"] = False
         return _sort_by_rank_score(docs_with_rank)[:top_k], meta
     except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
-        meta["rerank_error"] = str(e)
+        public_error = classify_provider_error(e)
+        meta["rerank_error"] = public_error.code
+        meta["rerank_error_code"] = public_error.code
+        meta["rerank_retryable"] = public_error.retryable
         return _sort_by_rank_score(docs_with_rank)[:top_k], meta
 
 
@@ -408,7 +427,11 @@ def rewrite_query_once(query: str) -> dict:
     if not model:
         raise RuntimeError("FAST_MODEL is required for query rewriting")
 
-    result = model.with_structured_output(RewritePlan).invoke(
+    result = with_structured_output(
+        model,
+        RewritePlan,
+        base_url=BASE_URL,
+    ).invoke(
         [{"role": "user", "content": REWRITE_PROMPT.format(query=query)}]
     )
     method = result.method
@@ -567,6 +590,9 @@ def retrieve_documents(
                 "rerank_error": "embedding_failed",
                 "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
                 "retrieval_mode": "failed",
+                "retrieval_degraded_code": "EMBEDDING_UNAVAILABLE",
+                "provider_error_code": "EMBEDDING_UNAVAILABLE",
+                "provider_error_stage": "embedding",
                 "retrieval_pipeline": "recall_merge_rerank",
                 "candidate_k": candidate_k,
                 **candidate_config,
@@ -615,6 +641,7 @@ def retrieve_documents(
                 candidate_k=candidate_k,
                 candidate_config=candidate_config,
             )
+            result["meta"]["retrieval_degraded_code"] = "HYBRID_RETRIEVAL_FALLBACK"
             result["meta"].update(extra_trace)
             return result
         except Exception:
@@ -628,6 +655,9 @@ def retrieve_documents(
                     "rerank_error": "retrieve_failed",
                     "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
                     "retrieval_mode": "failed",
+                    "retrieval_degraded_code": "VECTOR_STORE_UNAVAILABLE",
+                    "provider_error_code": "VECTOR_STORE_UNAVAILABLE",
+                    "provider_error_stage": "retrieval",
                     "retrieval_pipeline": "recall_merge_rerank",
                     "candidate_k": candidate_k,
                     **candidate_config,

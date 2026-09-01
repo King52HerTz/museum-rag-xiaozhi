@@ -31,6 +31,9 @@
           @select="handleMenuSelect"
           style="background-size: cover; background-position: center"
         >
+          <div class="model-visual" aria-hidden="true">
+            <img src="@/assets/brand/model-config.jpg" alt="" />
+          </div>
           <el-menu-item index="vad">
             <span class="menu-text">{{ $t("modelConfig.vad") }}</span>
           </el-menu-item>
@@ -654,7 +657,7 @@ export default {
   position: relative;
   flex-direction: column;
   background-size: cover;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
   -webkit-background-size: cover;
   -o-background-size: cover;
 }
@@ -696,7 +699,7 @@ export default {
   border-right: 1px solid #ebeef5;
   background: linear-gradient(
       120deg,
-      rgba(107, 140, 255, 0.3) 0%,
+      rgba(181, 138, 76, 0.3) 0%,
       rgba(169, 102, 255, 0.3) 25%,
       transparent 60%
     ),
@@ -709,7 +712,7 @@ export default {
 
 .nav-panel .el-menu-item {
   height: 50px;
-  background: #e9f0ff;
+  background: var(--museum-primary-soft);
   line-height: 50px;
   border-radius: 4px 0 0 4px !important;
   transition: all 0.3s;
@@ -722,7 +725,7 @@ export default {
 }
 
 .nav-panel .el-menu-item.is-active {
-  background: #5778ff;
+  background: var(--museum-primary);
   position: relative;
   padding-left: 40px !important;
 }
@@ -776,7 +779,7 @@ export default {
 }
 
 .btn-search {
-  background: linear-gradient(135deg, #6b8cff, #a966ff);
+  background: linear-gradient(135deg, var(--museum-primary), var(--museum-primary-light));
   border: none;
   color: white;
 }
@@ -803,7 +806,7 @@ export default {
   line-height: 32px;
   border-radius: 4px;
   border: 1px solid #e4e7ed;
-  background: #dee7ff;
+  background: var(--museum-primary-soft);
   color: #606266;
   font-size: 14px;
 }
@@ -838,7 +841,7 @@ export default {
 }
 
 ::v-deep .search-input .el-input__inner:focus {
-  border-color: #6b8cff;
+  border-color: var(--museum-primary);
   outline: none;
 }
 
@@ -893,7 +896,7 @@ export default {
 }
 
 .batch-actions .el-button--primary {
-  background: #5f70f3 !important;
+  background: var(--museum-primary) !important;
   color: white;
 }
 
@@ -908,7 +911,7 @@ export default {
 }
 
 .batch-actions .el-button:first-child {
-  background: linear-gradient(135deg, #409eff, #6b8cff);
+  background: linear-gradient(135deg, var(--museum-primary), var(--museum-primary));
   border: none;
   color: white;
 }
@@ -979,8 +982,8 @@ export default {
 }
 
 ::v-deep .el-checkbox__input.is-checked .el-checkbox__inner {
-  background-color: #5f70f3;
-  border-color: #5f70f3;
+  background-color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 .voice-management-btn {
@@ -1034,7 +1037,7 @@ export default {
     padding: 0 12px;
     border-radius: 4px;
     border: 1px solid #e4e7ed;
-    background: #dee7ff;
+    background: var(--museum-primary-soft);
     color: #606266;
     font-size: 14px;
     cursor: pointer;
@@ -1069,9 +1072,9 @@ export default {
   }
 
   .pagination-btn.active {
-    background: #5f70f3 !important;
+    background: var(--museum-primary) !important;
     color: #ffffff !important;
-    border-color: #5f70f3 !important;
+    border-color: var(--museum-primary) !important;
 
     &:hover {
       background: #6d7cf5 !important;
@@ -1163,12 +1166,145 @@ export default {
 }
 
 ::v-deep .el-loading-spinner .path {
-  stroke: #6b8cff;
+  stroke: var(--museum-primary);
 }
 
 ::v-deep .el-loading-text {
-  color: #6b8cff !important;
+  color: var(--museum-primary) !important;
   font-size: 14px;
   margin-top: 8px;
+}
+
+/* 智博导览主题覆盖：保留页面结构，只统一视觉语言。 */
+.welcome {
+  background: var(--museum-background);
+}
+
+.main-wrapper {
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-lg);
+  background: var(--museum-surface);
+  box-shadow: var(--museum-shadow-sm);
+}
+
+.page-title {
+  color: var(--museum-text);
+}
+
+.nav-panel {
+  min-width: 258px;
+  padding: 18px 14px;
+  border-right-color: var(--museum-border);
+  background: var(--museum-surface-muted);
+}
+
+.model-visual {
+  height: 124px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(181, 138, 76, 0.24);
+  border-radius: var(--museum-radius-md);
+  background: #fffdf8;
+}
+
+.model-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nav-panel .el-menu-item {
+  width: 100%;
+  height: 42px;
+  margin: 3px 0;
+  padding: 0 14px !important;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  border-radius: 9px !important;
+  color: var(--museum-text-secondary);
+  background: transparent;
+  line-height: 42px;
+}
+
+.nav-panel .el-menu-item:hover {
+  border-color: var(--museum-border);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nav-panel .el-menu-item.is-active {
+  padding-left: 38px !important;
+  color: #fff;
+  background: var(--museum-primary);
+  box-shadow: 0 6px 14px rgba(181, 138, 76, 0.18);
+}
+
+.nav-panel .el-menu-item.is-active::before {
+  left: 15px;
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+}
+
+.menu-text {
+  padding-right: 0;
+  color: inherit;
+  text-align: left;
+}
+
+.content-area,
+.model-card,
+.table-footer,
+:deep(.transparent-table),
+:deep(.transparent-table .el-table__header th),
+:deep(.transparent-table .el-table__body tr) {
+  background: var(--museum-surface);
+}
+
+.btn-search,
+.batch-actions .el-button--primary,
+.batch-actions .el-button:first-child,
+.custom-pagination .pagination-btn.active {
+  border-color: var(--museum-primary) !important;
+  color: #fff !important;
+  background: var(--museum-primary) !important;
+}
+
+.btn-search:hover,
+.batch-actions .el-button--primary:hover,
+.batch-actions .el-button:first-child:hover,
+.custom-pagination .pagination-btn.active:hover {
+  background: var(--museum-primary-hover) !important;
+}
+
+::v-deep .page-size-select .el-input__inner,
+.custom-pagination .pagination-btn:first-child,
+.custom-pagination .pagination-btn:nth-child(2),
+.custom-pagination .pagination-btn:nth-child(3),
+.custom-pagination .pagination-btn:nth-last-child(2) {
+  border-color: var(--museum-border);
+  color: var(--museum-text-secondary);
+  background: var(--museum-surface-muted);
+}
+
+::v-deep .el-checkbox__input.is-checked .el-checkbox__inner,
+::v-deep .el-loading-spinner .path {
+  border-color: var(--museum-primary);
+  background-color: var(--museum-primary);
+  stroke: var(--museum-primary);
+}
+
+::v-deep .el-loading-text,
+.voice-management-btn,
+.edit-btn {
+  color: var(--museum-primary-hover) !important;
+}
+
+.voice-management-btn {
+  border: 1px solid var(--museum-primary-light);
+  background: var(--museum-primary-soft);
+}
+
+.delete-btn {
+  color: var(--museum-danger) !important;
 }
 </style>

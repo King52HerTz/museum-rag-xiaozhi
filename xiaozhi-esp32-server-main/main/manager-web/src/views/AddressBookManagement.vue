@@ -587,7 +587,7 @@ export default {
   display: flex;
   flex-direction: column;
   background-size: cover;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
   -webkit-background-size: cover;
   -o-background-size: cover;
   overflow: hidden;
@@ -767,7 +767,7 @@ export default {
     .device-name-text {
       line-height: 34px;
       font-size: 24px;
-      color: #3d4566;
+      color: var(--museum-text);
       cursor: pointer;
     }
 
@@ -775,8 +775,8 @@ export default {
       height: 28px;
       font-size: 24px;
       font-weight: 600;
-      color: #3d4566;
-      border: 1px solid #6b8cff;
+      color: var(--museum-text);
+      border: 1px solid var(--museum-primary);
       border-radius: 4px;
       padding: 2px 8px;
       outline: none;
@@ -785,11 +785,11 @@ export default {
 
     i {
       cursor: pointer;
-      color: #6b8cff;
+      color: var(--museum-primary);
       font-size: 18px;
 
       &:hover {
-        color: #a966ff;
+        color: var(--museum-primary-light);
       }
     }
   }
@@ -861,7 +861,7 @@ export default {
 
     i {
       font-size: 28px;
-      color: #6b8cff;
+      color: var(--museum-primary);
       flex-shrink: 0;
     }
 
@@ -876,7 +876,7 @@ export default {
 
       .stat-value {
         font-size: 14px;
-        color: #3d4566;
+        color: var(--museum-text);
         font-weight: 500;
       }
 
@@ -894,16 +894,16 @@ export default {
           color: #909399;
           cursor: pointer;
           &:hover {
-            color: #6b8cff;
+            color: var(--museum-primary);
           }
         }
       }
 
       .stat-edit-input {
         font-size: 14px;
-        color: #3d4566;
+        color: var(--museum-text);
         font-weight: 500;
-        border: 1px solid #6b8cff;
+        border: 1px solid var(--museum-primary);
         border-radius: 4px;
         padding: 2px 6px;
         outline: none;
@@ -934,7 +934,7 @@ export default {
       h3 {
         font-size: 24px;
         font-weight: 500;
-        color: #3d4566;
+        color: var(--museum-text);
         margin: 0 0 10px 0;
       }
 
@@ -1032,7 +1032,7 @@ export default {
 
     .permission-name {
       font-size: 14px;
-      color: #3d4566;
+      color: var(--museum-text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1057,7 +1057,7 @@ export default {
         cursor: pointer;
         flex-shrink: 0;
         &:hover {
-          color: #6b8cff;
+          color: var(--museum-primary);
         }
       }
     }
@@ -1087,8 +1087,8 @@ export default {
 
 .permission-edit-input {
   font-size: 14px;
-  color: #3d4566;
-  border: 1px solid #6b8cff;
+  color: var(--museum-text);
+  border: 1px solid var(--museum-primary);
   border-radius: 4px;
   padding: 2px 6px;
   outline: none;
@@ -1104,7 +1104,7 @@ export default {
 .main-title {
   font-size: 24px;
   font-weight: 500;
-  color: #3d4566;
+  color: var(--museum-text);
   margin: 0 0 8px 0;
 }
 
@@ -1148,7 +1148,7 @@ export default {
   }
 
   &.active, &.expanded {
-    border-color: #6b8cff;
+    border-color: var(--museum-primary);
     background: #e6f0ff;
   }
 
@@ -1176,7 +1176,7 @@ export default {
     .agent-name {
       font-size: 14px;
       font-weight: 600;
-      color: #3d4566;
+      color: var(--museum-text);
       text-align: left;
     }
 
@@ -1207,7 +1207,7 @@ export default {
   padding-top: 20px;
 
   .el-button--primary {
-    background: linear-gradient(135deg, #6b8cff, #a966ff);
+    background: linear-gradient(135deg, var(--museum-primary), var(--museum-primary-light));
     border: none;
     width: 120px;
   }

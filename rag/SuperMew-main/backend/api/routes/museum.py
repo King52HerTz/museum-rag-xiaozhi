@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from backend.api.resources import document_profile_store
 from backend.infra.auth import verify_bridge_api_key
+from backend.infra.provider_errors import classify_provider_error
 from backend.rag.utils import retrieve_documents, retrieval_trace_fields
 
 router = APIRouter(prefix="/api/museum", tags=["museum"])
@@ -110,6 +111,22 @@ def _trace_summary(trace: dict[str, Any]) -> str:
         f"|retrieval_empty={retrieval_empty if retrieval_empty is not None else '-'}"
         f"|rerank_error={rerank_error}"
     )
+
+
+def _with_retrieval_outcome(contexts: list[MuseumContext], trace: dict[str, Any]) -> dict[str, Any]:
+    """Add a stable outcome so downstream callers can distinguish empty from degraded retrieval."""
+    enriched = dict(trace)
+    degraded = trace.get("retrieval_degraded_code") or trace.get("provider_error_code")
+    if degraded:
+        enriched["retrieval_outcome"] = "INSUFFICIENT_EVIDENCE"
+        enriched["retrieval_status"] = "insufficient_evidence"
+    elif contexts:
+        enriched["retrieval_outcome"] = "ANSWERABLE"
+        enriched["retrieval_status"] = "answerable"
+    else:
+        enriched["retrieval_outcome"] = "NO_KNOWLEDGE"
+        enriched["retrieval_status"] = "no_knowledge"
+    return enriched
 
 
 def _question_preview(question: str, limit: int = 48) -> str:
@@ -224,6 +241,7 @@ async def museum_query(
         ]
         meta = result.get("meta", {}) if isinstance(result, dict) else {}
         trace = retrieval_trace_fields(meta) if isinstance(meta, dict) else {}
+        trace = _with_retrieval_outcome(contexts, trace)
 
         if not contexts:
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
@@ -234,9 +252,14 @@ async def museum_query(
                 0,
                 _trace_summary(trace),
             )
+            message = (
+                "检索服务暂时不可用，当前无法确认知识库是否有答案"
+                if trace.get("retrieval_outcome") == "INSUFFICIENT_EVIDENCE"
+                else "未检索到相关资料"
+            )
             return _build_response(
                 code=0,
-                message="未检索到相关资料",
+                message=message,
                 query=query,
                 contexts=[],
                 trace=trace if request.need_trace else {},
@@ -259,11 +282,13 @@ async def museum_query(
         )
     except Exception as exc:
         elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-        logger.exception(
-            "museum bridge query failed | trace_id=%s | elapsed_ms=%s | error_type=%s",
+        public_error = classify_provider_error(exc)
+        logger.error(
+            "museum bridge query failed | trace_id=%s | elapsed_ms=%s | error_type=%s | error_code=%s",
             trace_id or "-",
             elapsed_ms,
             type(exc).__name__,
+            public_error.code,
         )
         raise HTTPException(
             status_code=500,
@@ -274,6 +299,6 @@ async def museum_query(
                 "contexts": [],
                 "trace": trace if request.need_trace else {},
                 "error_code": "MUSEUM_QUERY_FAILED",
-                "details": [str(exc)],
+                "details": [public_error.detail],
             },
         ) from exc

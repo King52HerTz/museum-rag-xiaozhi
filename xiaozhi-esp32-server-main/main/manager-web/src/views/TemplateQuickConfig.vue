@@ -81,7 +81,7 @@ export default {
   data() {
     return {
       form: {
-        agentCode: "小智",
+        agentCode: "智博导览",
         agentName: "",
         systemPrompt: "",
         sort: 0,
@@ -218,7 +218,7 @@ export default {
       this.form = {
         ...this.form,
         agentName: this.$t('templateQuickConfig.newTemplate'),
-        agentCode: '小智',
+        agentCode: '智博导览',
         systemPrompt: '',
         sort: 1
       };
@@ -269,7 +269,7 @@ export default {
   display: flex;
   position: relative;
   flex-direction: column;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd);
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca);
   background-size: cover;
   -webkit-background-size: cover;
   -o-background-size: cover;
@@ -372,7 +372,7 @@ export default {
 
 ::v-deep .el-form-item__label {
   font-size: 12px !important;
-  color: #3d4566 !important;
+  color: var(--museum-text) !important;
   font-weight: 400;
   line-height: 22px;
   padding-bottom: 2px;
@@ -401,7 +401,7 @@ export default {
 .header-icon {
   width: 37px;
   height: 37px;
-  background: #5778ff;
+  background: var(--museum-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -442,8 +442,8 @@ export default {
 }
 
 .custom-close-btn:hover {
-  color: #409EFF;
-  border-color: #409EFF;
+  color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 .header-actions {
@@ -454,7 +454,7 @@ export default {
 }
 
 .header-actions .save-btn {
-  background: #5778ff;
+  background: var(--museum-primary);
   color: white;
   border: none;
   border-radius: 18px;
@@ -464,9 +464,9 @@ export default {
 }
 
 .header-actions .reset-btn {
-  background: #e6ebff;
-  color: #5778ff;
-  border: 1px solid #adbdff;
+  background: var(--museum-primary-soft);
+  color: var(--museum-primary);
+  border: 1px solid var(--museum-primary-light);
   border-radius: 18px;
   padding: 8px 16px;
   height: 32px;

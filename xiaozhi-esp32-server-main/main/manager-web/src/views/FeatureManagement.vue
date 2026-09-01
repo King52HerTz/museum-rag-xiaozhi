@@ -365,7 +365,7 @@ export default {
   position: relative;
   flex-direction: column;
   background-size: cover;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
   -webkit-background-size: cover;
   -o-background-size: cover;
   overflow: hidden;
@@ -394,7 +394,7 @@ export default {
 .header-icon {
   width: 40px;
   height: 40px;
-  background: #5778ff;
+  background: var(--museum-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -523,12 +523,12 @@ export default {
 }
 
 .feature-checkbox ::v-deep .el-checkbox__input.is-checked .el-checkbox__inner {
-  background-color: #5778ff;
-  border-color: #5778ff;
+  background-color: var(--museum-primary);
+  border-color: var(--museum-primary);
 }
 
 .feature-checkbox ::v-deep .el-checkbox__input.is-checked + .el-checkbox__label {
-  color: #5778ff;
+  color: var(--museum-primary);
 }
 
 .feature-name {
@@ -605,7 +605,7 @@ export default {
   margin-left: 13px;
   font-size: 12px;
   background: #ebebfe;
-  color: #5778ff;
+  color: var(--museum-primary);
   padding: 2px 10px;
   border-radius: 10px;
 }

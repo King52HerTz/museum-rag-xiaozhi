@@ -1,6 +1,6 @@
 schema_version: 1
 project: museum-rag-xiaozhi
-updated_at: 2026-08-13
+updated_at: 2026-08-30
 
 # This file records source ownership and synchronization boundaries.
 # It intentionally contains no credentials, local paths outside this repository,
@@ -22,11 +22,12 @@ components:
 
   supermew:
     source: https://github.com/icey1287/SuperMew.git
+    fork: https://github.com/King52HerTz/SuperMew-museum.git
     local_path: rag/SuperMew-main
     local_source_type: vendored_snapshot
     local_commit: unknown
     checked_upstream_branch: main
-    checked_upstream_commit: f997821db835c9c080accaf1f78c2c4a602fe4b7
+    checked_upstream_commit: bb027199dfecdca28387b8364e2b490937fbd3ba
     sync_policy: upgrade_by_tested_batch
     local_extension_boundary:
       - backend/api/routes/museum.py
@@ -35,6 +36,16 @@ components:
       - backend/app.py
       - backend/api/router.py
       - frontend/src/views
+    upgrade_candidate:
+      clone_path: rag/SuperMew-upstream
+      source_commit: bb027199dfecdca28387b8364e2b490937fbd3ba
+      official_baseline_branch: codex/supermew-upstream-20260830
+      official_baseline_tag: supermew-upstream-main-20260830
+      working_branch: codex/museum-upgrade
+      working_commit: d6ad05e
+      fork_branch: https://github.com/King52HerTz/SuperMew-museum/tree/codex/museum-upgrade
+      status: fork_created_branch_pushed_upstream_push_disabled_windows_portable_tests_passed_stable_outcomes_evidence_budget_result_semantics_coverage_tracking_retrieval_degradation_provider_error_normalization_rerank_provider_safety_museum_bridge_safety_rag_audit_panel_and_bridge_rag_outcome_batches_migrated_mawangdui_eval_v3_compat_gate_full_suite_requires_linux_security_primitives_live_quality_pending
+      local_only: false
 
   hardware:
     local_path: yingjian/SmartRing-Plus-main
@@ -44,7 +55,7 @@ components:
 
 repository:
   stable_baseline_branch: main
-  stable_baseline_commit: 27f22d8
-  integration_candidate_branch: codex/sync-supermew-upstream-20260813
-  integration_candidate_commit: 481b8b8
+  stable_baseline_commit: f4c547e
+  integration_candidate_branch: codex/sync-supermew-upstream-20260830
+  integration_candidate_commit: 1410684
   release_rule: do_not_release_a_dirty_worktree

@@ -390,7 +390,7 @@ export default {
   position: relative;
   flex-direction: column;
   background-size: cover;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
   -webkit-background-size: cover;
   -o-background-size: cover;
   overflow: hidden;
@@ -575,7 +575,7 @@ export default {
 }
 
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: #5f70f3 !important;
-  border-color: #5f70f3 !important;
+  background-color: var(--museum-primary) !important;
+  border-color: var(--museum-primary) !important;
 }
 </style>

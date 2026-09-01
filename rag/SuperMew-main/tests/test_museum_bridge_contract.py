@@ -3,6 +3,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from fastapi import HTTPException
 from pydantic import ValidationError
 
 from backend.api.resources import is_supported_document
@@ -124,6 +125,8 @@ class MuseumBridgeContractTests(unittest.TestCase):
         self.assertEqual("马王堆展品.pdf", response.contexts[0].source)
         self.assertEqual("chunk-1", response.contexts[0].chunk_id)
         self.assertEqual("structured", response.trace["document_filter_mode"])
+        self.assertEqual("ANSWERABLE", response.trace["retrieval_outcome"])
+        self.assertEqual("answerable", response.trace["retrieval_status"])
         self.assertEqual(1, len(calls))
         self.assertIn('filename in ["马王堆展品.pdf"]', calls[0][1]["filter_expr"])
 
@@ -175,6 +178,60 @@ class MuseumBridgeContractTests(unittest.TestCase):
         self.assertEqual("未检索到相关资料", response.message)
         self.assertEqual([], response.contexts)
         self.assertEqual({}, response.trace)
+
+    def test_query_trace_distinguishes_no_knowledge_from_degraded_retrieval(self):
+        request = museum.MuseumQueryRequest(question="资料中没有的问题")
+        http_request = SimpleNamespace(state=SimpleNamespace(bridge_trace_id="trace-no-knowledge"), headers={})
+
+        with (
+            patch.object(museum.document_profile_store, "find_filenames", return_value=[]),
+            patch.object(
+                museum,
+                "retrieve_documents",
+                return_value={"docs": [], "meta": {"retrieval_empty": True}},
+            ),
+        ):
+            response = asyncio.run(museum.museum_query(http_request, request))
+
+        self.assertEqual("NO_KNOWLEDGE", response.trace["retrieval_outcome"])
+        self.assertEqual("no_knowledge", response.trace["retrieval_status"])
+
+        with (
+            patch.object(museum.document_profile_store, "find_filenames", return_value=[]),
+            patch.object(
+                museum,
+                "retrieve_documents",
+                return_value={
+                    "docs": [],
+                    "meta": {
+                        "retrieval_empty": True,
+                        "retrieval_degraded_code": "VECTOR_STORE_UNAVAILABLE",
+                    },
+                },
+            ),
+        ):
+            degraded_response = asyncio.run(museum.museum_query(http_request, request))
+
+        self.assertEqual("检索服务暂时不可用，当前无法确认知识库是否有答案", degraded_response.message)
+        self.assertEqual("INSUFFICIENT_EVIDENCE", degraded_response.trace["retrieval_outcome"])
+        self.assertEqual("insufficient_evidence", degraded_response.trace["retrieval_status"])
+
+    def test_query_failure_redacts_provider_details(self):
+        request = museum.MuseumQueryRequest(question="黑地彩绘棺的尺寸？")
+        http_request = SimpleNamespace(state=SimpleNamespace(bridge_trace_id="trace-error"), headers={})
+
+        with patch.object(
+            museum.document_profile_store,
+            "find_filenames",
+            side_effect=RuntimeError("provider-token-redacted"),
+        ):
+            with self.assertRaises(HTTPException) as context:
+                asyncio.run(museum.museum_query(http_request, request))
+
+        detail = context.exception.detail
+        self.assertEqual("MUSEUM_QUERY_FAILED", detail["error_code"])
+        self.assertEqual("[INTERNAL_ERROR] 服务暂时不可用，请稍后重试。", detail["details"][0])
+        self.assertNotIn("provider-token-redacted", str(detail))
 
 
 if __name__ == "__main__":

@@ -504,7 +504,7 @@ export default {
     position: relative;
     flex-direction: column;
     background-size: cover;
-    background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+    background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
     -webkit-background-size: cover;
     -o-background-size: cover;
     overflow: hidden;
@@ -545,7 +545,7 @@ export default {
 }
 
 .btn-search {
-    background: linear-gradient(135deg, #6b8cff, #a966ff);
+    background: linear-gradient(135deg, var(--museum-primary), var(--museum-primary-light));
     border: none;
     color: white;
 }
@@ -619,7 +619,7 @@ export default {
         padding: 0 12px;
         border-radius: 4px;
         border: 1px solid #e4e7ed;
-        background: #dee7ff;
+        background: var(--museum-primary-soft);
         color: #606266;
         font-size: 14px;
         cursor: pointer;
@@ -653,9 +653,9 @@ export default {
     }
 
     .pagination-btn.active {
-        background: #5f70f3 !important;
+        background: var(--museum-primary) !important;
         color: #ffffff !important;
-        border-color: #5f70f3 !important;
+        border-color: var(--museum-primary) !important;
 
         &:hover {
             background: #6d7cf5 !important;
@@ -682,7 +682,7 @@ export default {
         line-height: 32px;
         border-radius: 4px;
         border: 1px solid #e4e7ed;
-        background: #dee7ff;
+        background: var(--museum-primary-soft);
         color: #606266;
         font-size: 14px;
     }
@@ -835,8 +835,8 @@ export default {
 }
 
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-    background-color: #5f70f3 !important;
-    border-color: #5f70f3 !important;
+    background-color: var(--museum-primary) !important;
+    border-color: var(--museum-primary) !important;
 }
 
 :deep(.el-loading-mask) {
@@ -845,7 +845,7 @@ export default {
 }
 
 :deep(.el-loading-spinner .path) {
-    stroke: #6b8cff;
+    stroke: var(--museum-primary);
 }
 
 .el-table {

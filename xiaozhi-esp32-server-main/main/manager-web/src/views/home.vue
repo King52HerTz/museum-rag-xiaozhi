@@ -7,20 +7,20 @@
         <!-- 首页内容 -->
         <div class="add-device">
           <div class="add-device-bg">
-            <div class="hellow-text" style="margin-top: 30px;">
+            <div class="hero-kicker">智博导览管理平台</div>
+            <div class="hellow-text">
               {{ $t('home.greeting') }}
             </div>
             <div class="hellow-text">
               {{ $t('home.wish') }}
             </div>
             <div class="hi-hint">
-              let's have a wonderful day!
+              统一管理博物馆导览智能体、设备与知识库
             </div>
             <div class="add-device-btn">
               <div class="left-add" @click="showAddDialog">
                 {{ $t('home.addAgent') }}
               </div>
-              <div style="width: 23px;height: 13px;background: #5778ff;margin-left: -10px;" />
               <div class="right-add">
                 <i class="el-icon-right" @click="showAddDialog" style="font-size: 20px;color: #fff;" />
               </div>
@@ -212,7 +212,7 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(145deg, #e6eeff, #eff0ff);
+  background: var(--museum-background);
   background-size: cover;
   /* 确保背景图像覆盖整个元素 */
   background-position: center;
@@ -224,25 +224,27 @@ export default {
 }
 
 .add-device {
-  height: 195px;
-  border-radius: 15px;
+  height: 220px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-lg);
   position: relative;
   overflow: hidden;
-  background: linear-gradient(269.62deg,
-      #e0e6fd 0%,
-      #cce7ff 49.69%,
-      #d3d3fe 100%);
+  background: linear-gradient(110deg, #fffdf8 0%, #f8f5ef 52%, #efe1ca 100%);
+  box-shadow: var(--museum-shadow-sm);
 }
 
 .add-device-bg {
   width: 100%;
   height: 100%;
   text-align: left;
-  background-image: url("@/assets/home/main-top-bg.png");
+  background-image:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.98) 0%, rgba(255, 253, 248, 0.9) 34%, rgba(255, 253, 248, 0.18) 62%),
+    url("@/assets/brand/museum-hero.jpg");
   overflow: hidden;
   background-size: cover;
   /* 确保背景图像覆盖整个元素 */
-  background-position: center;
+  background-position: right center;
+  background-repeat: no-repeat;
   /* 从顶部中心对齐 */
   -webkit-background-size: cover;
   /* 兼容老版本WebKit浏览器 */
@@ -252,8 +254,8 @@ export default {
   /* 兼容老版本Opera浏览器 */
   .hellow-text {
     margin-left: 75px;
-    color: #3d4566;
-    font-size: 33px;
+    color: var(--museum-text);
+    font-size: 30px;
     font-weight: 700;
     letter-spacing: 0;
   }
@@ -262,10 +264,23 @@ export default {
     font-weight: 400;
     font-size: 12px;
     text-align: left;
-    color: #818cae;
+    color: var(--museum-text-secondary);
     margin-left: 75px;
     margin-top: 5px;
   }
+}
+
+.hero-kicker {
+  width: fit-content;
+  margin: 30px 0 12px 75px;
+  padding: 5px 11px;
+  border: 1px solid rgba(181, 138, 76, 0.34);
+  border-radius: 999px;
+  color: var(--museum-primary-hover);
+  background: rgba(255, 253, 248, 0.8);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 
 .add-device-btn {
@@ -279,7 +294,7 @@ export default {
     padding: 0 14px;
     height: 34px;
     border-radius: 17px;
-    background: #5778ff;
+    background: var(--museum-primary);
     color: #fff;
     font-size: 14px;
     font-weight: 500;
@@ -291,8 +306,8 @@ export default {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: #5778ff;
-    margin-left: -6px;
+    background: var(--museum-primary-hover);
+    margin-left: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -302,7 +317,7 @@ export default {
 .device-list-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 30px;
+  gap: 24px;
   padding: 30px 0;
 }
 
@@ -318,7 +333,7 @@ export default {
   font-weight: 400;
   margin-top: auto;
   padding-top: 30px;
-  color: #979db1;
+  color: var(--museum-text-muted);
   text-align: center;
   /* 居中显示 */
 }
@@ -332,7 +347,8 @@ export default {
 
 .skeleton-item {
   background: #fff;
-  border-radius: 8px;
+  border: 1px solid var(--museum-border);
+  border-radius: var(--museum-radius-md);
   padding: 20px;
   height: 120px;
   position: relative;

@@ -20,8 +20,8 @@ SEARCH_MUSEUM_KNOWLEDGE_FUNCTION_DESC = {
         "name": "search_museum_knowledge",
         "description": (
             "当用户询问湖南省博物馆、马王堆汉墓、辛追夫人、素纱单衣、T形帛画、"
-            "皿方罍、人面纹方鼎、文物年代、展品故事、遗体防腐、展厅路线或博物馆导览问题时，"
-            "调用博物馆知识库检索资料。"
+            "皿方罍、人面纹方鼎、文物年代、展品故事、遗体保存、展厅路线或博物馆导览问题时，"
+            "调用博物馆知识库检索资料。调用前不要向游客解释正在查询，拿到结果后直接用导览员口吻回答。"
         ),
         "parameters": {
             "type": "object",
@@ -82,30 +82,52 @@ def _trace_digest(result: dict) -> str:
 
 def _build_llm_context(question: str, result: dict) -> str:
     contexts = result.get("contexts") or []
-    if not contexts:
+    trace = result.get("trace") or {}
+    if not isinstance(trace, dict):
+        trace = {}
+    outcome = _safe_text(trace.get("retrieval_outcome"))
+    if not contexts or outcome == "NO_KNOWLEDGE":
         return (
             "你是“智博导览助手”，一名专业、亲切的博物馆语音导览员。\n"
             f"游客问题：{question}\n"
-            "博物馆知识库没有检索到足够相关的资料。\n"
-            "请直接、自然地告诉游客：我暂时没有查到准确资料，可以换一种问法，或询问其他展品。"
+            "博物馆知识库没有检索到足够相关的资料。请直接、自然地告诉游客：目前没有查到足够准确的馆方资料，"
+            "可以换一种问法，或询问其他展品；不要说‘我来为您查询’，也不要编造答案。"
+        )
+
+    evidence_notice = ""
+    if outcome == "INSUFFICIENT_EVIDENCE":
+        evidence_notice = (
+            "当前检索服务存在降级或证据覆盖缺口。只能回答下面片段明确支持的内容；"
+            "如果问题要求的细节不在片段中，请明确说明资料不足，不要自行补全。\n\n"
         )
 
     lines = [
         "你是“智博导览助手”，一名专业、亲切的博物馆语音导览员。",
-        "请严格根据下面的博物馆知识库资料回答游客问题。",
+        "请严格根据下面的博物馆知识库资料回答游客问题，调用完成后直接回答，不要复述检索过程。",
         "",
         "回答要求：",
-        "1. 适合语音播报，控制在100到200字；",
-        "2. 语言自然、生动，像现场导览员，不要像论文摘要；",
-        "3. 不要编造知识库之外的事实；",
-        "4. 如果资料不足，请明确说“我暂时没有查到准确资料”；",
-        "5. 不要机械朗读文件名，但可以自然说明“根据馆藏资料”；",
-        "6. 如果资料来自多个片段，请综合成一段连贯回答。",
+        "1. 适合语音播报，默认控制在80到180字，分成2到4个短段；",
+        "2. 第一处先直接回答问题，像现场导览员，不要像论文摘要或检索报告；",
+        "3. 不要使用固定小标题、项目符号、Markdown 加粗或表情符号；",
+        "4. 不要出现“我来为您查询”“根据知识库”“需要说明的是”等过程性套话；",
+        "5. 不要编造知识库之外的事实；资料不足时只用一句话说明缺口；",
+        "6. 不要机械朗读文件名，如果需要引用，在相关事实后标注片段编号；",
+        "7. 如果资料来自多个片段，请综合成连贯、适合游客听的回答；机制问题即使没有单一结论，也要先给出资料支持的最小有效解释，不要直接拒答或让游客换个问题。",
         "",
         f"游客问题：{question}",
         "",
-        "博物馆知识库检索结果：",
     ]
+
+    if evidence_notice:
+        lines.append(evidence_notice.rstrip())
+
+    coverage_gaps = [
+        _safe_text(item) for item in (trace.get("coverage_gap_questions") or []) if _safe_text(item)
+    ]
+    if coverage_gaps:
+        lines.append("证据覆盖缺口（不要猜测）：" + "；".join(coverage_gaps))
+
+    lines.append("博物馆知识库检索结果：")
 
     for i, item in enumerate(contexts[:5], start=1):
         source = _safe_text(item.get("source") or item.get("title"), "未知来源")
@@ -142,7 +164,15 @@ def search_museum_knowledge(
     museum = _safe_text(plugin_config.get("museum"), "湖南省博物馆")
     exhibition = _safe_text(plugin_config.get("exhibition"), "")
     top_k = plugin_config.get("top_k", 5)
+    try:
+        top_k = int(top_k)
+    except (TypeError, ValueError):
+        top_k = 5
     timeout = plugin_config.get("timeout", 8)
+    try:
+        timeout = float(timeout)
+    except (TypeError, ValueError):
+        timeout = 8.0
     need_trace = bool(plugin_config.get("need_trace", True))
     request_id = uuid.uuid4().hex[:16]
     started_at = time.perf_counter()

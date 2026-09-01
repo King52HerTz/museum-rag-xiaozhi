@@ -128,7 +128,7 @@ export default {
   cursor: pointer;
   flex: 1;
   border-radius: 23px;
-  background: #5778ff;
+  background: var(--museum-primary);
   height: 40px;
   font-weight: 500;
   font-size: 12px;
@@ -138,9 +138,9 @@ export default {
 }
 
 .cancel-btn {
-  background: #e6ebff;
-  border: 1px solid #adbdff;
-  color: #5778ff;
+  background: var(--museum-primary-soft);
+  border: 1px solid var(--museum-primary-light);
+  color: var(--museum-primary);
 }
 
 ::v-deep .el-dialog {

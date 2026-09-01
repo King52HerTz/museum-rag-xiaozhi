@@ -2,9 +2,9 @@
   <form>
     <el-dialog :visible.sync="dialogVisible"  width="24%" center>
       <div
-        style="margin: 0 10px 10px;display: flex;align-items: center;gap: 10px;font-weight: 700;font-size: 20px;text-align: left;color: #3d4566;">
+        style="margin: 0 10px 10px;display: flex;align-items: center;gap: 10px;font-weight: 700;font-size: 20px;text-align: left;color: var(--museum-text);">
         <div
-          style="width: 40px;height: 40px;border-radius: 50%;background: #5778ff;display: flex;align-items: center;justify-content: center;">
+          style="width: 40px;height: 40px;border-radius: 50%;background: var(--museum-primary);display: flex;align-items: center;justify-content: center;">
           <img loading="lazy" src="@/assets/login/shield.png" alt=""
             style="width: 19px;height: 23px; filter: brightness(0) invert(1);" />
         </div>
@@ -12,21 +12,21 @@
       </div>
       <div style="height: 1px;background: #e8f0ff;" />
       <div style="margin: 22px 15px;">
-        <div style="font-weight: 400;font-size: 14px;text-align: left;color: #3d4566;">
+        <div style="font-weight: 400;font-size: 14px;text-align: left;color: var(--museum-text);">
           <div style="color: red;display: inline-block;">*</div>
           {{ $t('changePassword.oldPasswordLabel') }}
         </div>
         <div class="input-46" style="margin-top: 12px;">
           <el-input :placeholder="$t('changePassword.oldPasswordPlaceholder')" v-model="oldPassword" type="password" show-password />
         </div>
-        <div style="font-weight: 400;font-size: 14px;text-align: left;color: #3d4566;margin-top: 12px;">
+        <div style="font-weight: 400;font-size: 14px;text-align: left;color: var(--museum-text);margin-top: 12px;">
           <div style="color: red;display: inline-block;">*</div>
           {{ $t('changePassword.newPasswordLabel') }}
         </div>
         <div class="input-46" style="margin-top: 12px;">
           <el-input :placeholder="$t('changePassword.newPasswordPlaceholder')" v-model="newPassword" type="password" show-password />
         </div>
-        <div style="font-weight: 400;font-size: 14px;text-align: left;color: #3d4566;margin-top: 12px;">
+        <div style="font-weight: 400;font-size: 14px;text-align: left;color: var(--museum-text);margin-top: 12px;">
           <div style="color: red;display: inline-block;">*</div>
           {{ $t('changePassword.confirmPasswordLabel') }}
         </div>
@@ -38,7 +38,7 @@
         <div class="dialog-btn" @click="confirm">
           {{ $t('changePassword.confirmButton') }}
         </div>
-        <div class="dialog-btn" style="background: #e6ebff;border: 1px solid #adbdff;color: #5778ff;" @click="cancel">
+        <div class="dialog-btn" style="background: var(--museum-primary-soft);border: 1px solid var(--museum-primary-light);color: var(--museum-primary);" @click="cancel">
           {{ $t('changePassword.cancelButton') }}
         </div>
       </div>
@@ -133,7 +133,7 @@ export default {
   cursor: pointer;
   flex: 1;
   border-radius: 23px;
-  background: #5778ff;
+  background: var(--museum-primary);
   height: 40px;
   font-weight: 500;
   font-size: 12px;

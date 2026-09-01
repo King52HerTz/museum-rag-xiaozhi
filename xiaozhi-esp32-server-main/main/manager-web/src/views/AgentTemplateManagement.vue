@@ -149,7 +149,7 @@ export default {
       confirmLoading: false,
       form: {
         id: null,
-        agentCode: "小智",
+        agentCode: "智博导览",
         agentName: "",
         systemPrompt: "",
         sort: 0,
@@ -230,7 +230,7 @@ export default {
       this.dialogTitle = this.$t("templateQuickConfig.addTemplate");
       this.form = {
         id: null,
-        agentCode: "小智",
+        agentCode: "智博导览",
         agentName: this.$t("templateQuickConfig.newTemplate"),
         systemPrompt: "",
         sort: 1,
@@ -249,7 +249,7 @@ export default {
           const template = res.data.data;
           this.form = {
             id: template.id,
-            agentCode: template.agentCode || "小智",
+            agentCode: template.agentCode || "智博导览",
             agentName: template.agentName || "",
             systemPrompt: template.systemPrompt || "",
             sort: template.sort || 0,
@@ -401,7 +401,7 @@ export default {
   display: flex;
   position: relative;
   flex-direction: column;
-  background: linear-gradient(to bottom right, #dce8ff, #e4eeff, #e6cbfd) center;
+  background: linear-gradient(to bottom right, #f8f5ef, #f7f0e4, #efe1ca) center;
   background-size: cover;
   overflow: hidden;
 }

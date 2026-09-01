@@ -1,8 +1,11 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="logo-icon">🏛️</div>
-      <h2>智博导览</h2>
+      <div class="logo-icon"><img :src="zhiboMark" alt="" /></div>
+      <div class="brand-copy">
+        <h2>智博导览</h2>
+        <small>知识库工作台</small>
+      </div>
     </div>
     <nav class="sidebar-nav">
       <button @click="onNewChat" :class="['nav-btn', { active: chatStore.activeNav === 'newChat' }]">
@@ -16,7 +19,7 @@
       </button>
     </nav>
     <div class="sidebar-footer">
-      <button @click="chatStore.handleClearChat" class="danger-btn">
+      <button @click="showClearDialog = true" class="danger-btn">
         <i class="fas fa-trash-alt"></i> 清空当前对话
       </button>
       <div v-if="authStore.isAuthenticated" class="user-badge">
@@ -27,20 +30,37 @@
         <i class="fas fa-right-from-bracket"></i> 退出登录
       </button>
     </div>
+    <MuseumConfirmDialog
+      :open="showClearDialog"
+      title="清空当前对话？"
+      message="当前页面中的对话内容将被清空，历史会话仍保留在记录中。"
+      confirm-text="清空对话"
+      @cancel="showClearDialog = false"
+      @confirm="onClearChat"
+    />
   </aside>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useChatStore } from '@/stores/chat';
 import { useSessionStore } from '@/stores/sessions';
+import MuseumConfirmDialog from '@/components/MuseumConfirmDialog.vue';
+import zhiboMark from '@/assets/zhibo-mark.png';
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
 const sessionStore = useSessionStore();
+const showClearDialog = ref(false);
 
 const onNewChat = () => {
   chatStore.handleNewChat();
+};
+
+const onClearChat = () => {
+  chatStore.handleClearChat();
+  showClearDialog.value = false;
 };
 
 const onHistory = async () => {

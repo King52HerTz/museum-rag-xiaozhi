@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -10,6 +11,7 @@ from backend.chat.runtime import create_agent_for_request, fast_model, model
 from backend.chat.storage import ConversationStorage
 from backend.chat.rag_context import get_last_rag_context
 from backend.chat.streaming import use_request_context
+from backend.infra.provider_errors import classify_provider_error
 from backend.schemas.chat import PendingHitlState, normalize_rag_trace
 
 CONTEXT_WINDOW_MESSAGES = 6
@@ -18,6 +20,7 @@ HITL_STATUSES = {"needs_clarification", "needs_scope_selection"}
 HITL_ROUTES = {"clarify", "scope_select"}
 
 storage = ConversationStorage()
+logger = logging.getLogger("chat.service")
 
 
 def _is_hitl_trace(rag_trace: dict | None) -> bool:
@@ -628,8 +631,19 @@ async def chat_with_agent_stream(
                             full_response += content
                             await output_queue.put({"type": "content", "content": content})
             except Exception as e:
-                agent_error = str(e)
-                await output_queue.put({"type": "error", "content": str(e)})
+                public_error = classify_provider_error(e)
+                agent_error = public_error.code
+                logger.error(
+                    "agent stream failed | error_type=%s | code=%s",
+                    type(e).__name__,
+                    public_error.code,
+                )
+                await output_queue.put({
+                    "type": "error",
+                    "code": public_error.code,
+                    "content": public_error.detail,
+                    "retryable": public_error.retryable,
+                })
             finally:
                 await output_queue.put(None)
 
@@ -689,7 +703,7 @@ async def chat_with_agent_stream(
         else:
             if is_hitl_resume and not agent_error:
                 save_meta[PENDING_HITL_KEY] = None
-            if _should_update_persistent_note(messages, persistent_note):
+            if not agent_error and _should_update_persistent_note(messages, persistent_note):
                 try:
                     save_meta["persistent_note"] = await update_persistent_note(
                         persistent_note,

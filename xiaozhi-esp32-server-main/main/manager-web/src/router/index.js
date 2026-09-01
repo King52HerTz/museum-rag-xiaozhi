@@ -90,9 +90,7 @@ const routes = [
   {
     path: '/knowledge-base-management',
     name: 'KnowledgeBaseManagement',
-    component: function () {
-      return import('../views/KnowledgeBaseManagement.vue')
-    },
+    redirect: '/museum-knowledge',
     meta: {
       requiresAuth: true,
       title: '知识库管理'
@@ -112,12 +110,10 @@ const routes = [
   {
     path: '/knowledge-file-upload',
     name: 'KnowledgeFileUpload',
-    component: function () {
-      return import('../views/KnowledgeFileUpload.vue')
-    },
+    redirect: '/museum-knowledge',
     meta: {
       requiresAuth: true,
-      title: '文档上传管理'
+      title: '知识库'
     }
   },
 

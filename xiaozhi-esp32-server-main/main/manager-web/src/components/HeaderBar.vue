@@ -3,8 +3,7 @@
     <div class="header-container">
       <!-- 左侧元素 -->
       <div class="header-left" @click="handleRouter('home')">
-        <img loading="lazy" alt="" src="@/assets/xiaozhi-logo.png" class="logo-img" />
-        <img loading="lazy" alt="" :src="xiaozhiAiIcon" class="brand-img" />
+        <BrandLockup />
       </div>
 
       <!-- 中间导航菜单 -->
@@ -74,15 +73,6 @@
           }" />
           <span class="nav-text">{{ $t("header.modelConfig") }}</span>
         </div>
-        <div v-if="featureStatus.knowledgeBase" class="equipment-management"
-          :class="{ 'active-tab': $route.path === '/knowledge-base-management' || $route.path === '/knowledge-file-upload' }"
-          @click="handleRouter('knowledgeBaseManagement')">
-          <img loading="lazy" alt="" src="@/assets/header/knowledge_base.png" :style="{
-            filter:
-              $route.path === '/knowledge-base-management' || $route.path === '/knowledge-file-upload' ? 'brightness(0) invert(1)' : 'None',
-          }" />
-          <span class="nav-text">{{ $t("header.knowledgeBase") }}</span>
-        </div>
         <div class="equipment-management"
           :class="{ 'active-tab': $route.path === '/museum-knowledge' }"
           @click="handleRouter('museumKnowledge')">
@@ -90,7 +80,7 @@
             filter:
               $route.path === '/museum-knowledge' ? 'brightness(0) invert(1)' : 'None',
           }" />
-          <span class="nav-text">博物馆知识库</span>
+          <span class="nav-text">知识库</span>
         </div>
         <div v-if="featureStatus.addressBook" class="equipment-management"
           :class="{ 'active-tab': $route.path === '/address-book-management' }"
@@ -214,10 +204,12 @@ import i18n, { changeLanguage } from "@/i18n";
 import featureManager from "@/utils/featureManager"; // 引入功能管理工具类
 import { mapActions, mapState } from "vuex";
 import ChangePasswordDialog from "./ChangePasswordDialog.vue"; // 引入修改密码弹窗组件
+import BrandLockup from "./BrandLockup.vue";
 
 export default {
   name: "HeaderBar",
   components: {
+    BrandLockup,
     ChangePasswordDialog,
   },
   props: ["devices"], // 接收父组件设备列表
@@ -246,7 +238,6 @@ export default {
       routerPaths: {
         home: "/home",
         modelConfig: "/model-config",
-        knowledgeBaseManagement: "/knowledge-base-management",
         museumKnowledge: "/museum-knowledge",
         addressBookManagement: "/address-book-management",
         voiceCloneManagement: "/voice-clone-management",
@@ -267,7 +258,6 @@ export default {
     ...mapState({
       featureStatus: (state) => ({
         voiceClone: state.pubConfig.systemWebMenu?.features?.voiceClone?.enabled, // 音色克隆功能状态
-        knowledgeBase: state.pubConfig.systemWebMenu?.features?.knowledgeBase?.enabled, // 知识库功能状态
         addressBook: state.pubConfig.systemWebMenu?.features?.addressBook?.enabled, // 通讯录功能状态
       }),
       userInfo: (state) => state.userInfo,
@@ -294,26 +284,6 @@ export default {
           return this.$t("language.ptBR");
         default:
           return this.$t("language.zhCN");
-      }
-    },
-    // 根据当前语言获取对应的xiaozhi-ai图标
-    xiaozhiAiIcon() {
-      const currentLang = this.currentLanguage;
-      switch (currentLang) {
-        case "zh_CN":
-          return require("@/assets/xiaozhi-ai.png");
-        case "zh_TW":
-          return require("@/assets/xiaozhi-ai_zh_TW.png");
-        case "en":
-          return require("@/assets/xiaozhi-ai_en.png");
-        case "de":
-          return require("@/assets/xiaozhi-ai_de.png");
-        case "vi":
-          return require("@/assets/xiaozhi-ai_vi.png");
-        case "pt_BR":
-          return require("@/assets/xiaozhi-ai_en.png");
-        default:
-          return require("@/assets/xiaozhi-ai.png");
       }
     },
     // 用户菜单选项
@@ -641,9 +611,11 @@ export default {
 
 <style lang="scss" scoped>
 .header {
-  background: #f6fcfe66;
-  border: 1px solid #fff;
-  height: 63px !important;
+  background: rgba(255, 253, 248, 0.96);
+  border: 0;
+  border-bottom: 1px solid var(--museum-border);
+  box-shadow: 0 4px 18px rgba(95, 85, 70, 0.06);
+  height: 68px !important;
   min-width: 900px;
   /* 设置最小宽度防止过度压缩 */
   overflow: visible;
@@ -654,33 +626,24 @@ export default {
   justify-content: space-between;
   align-items: center;
   height: 100%;
-  padding: 0 10px;
+  padding: 0 24px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 120px;
+  min-width: 196px;
   cursor: pointer;
-}
-
-.logo-img {
-  width: 42px;
-  height: 42px;
-}
-
-.brand-img {
-  height: 20px;
 }
 
 .header-center {
   display: flex;
   align-items: center;
-  gap: 25px;
+  gap: 12px;
   position: absolute;
   left: 50%;
-  transform: translateX(calc(-50% - 80px));
+  transform: translateX(-50%);
 }
 
 .header-right {
@@ -692,18 +655,19 @@ export default {
 }
 
 .equipment-management {
-  height: 30px;
-  border-radius: 15px;
-  background: #deeafe;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
   display: flex;
   justify-content: center;
   font-size: 16px;
   font-weight: 500;
   gap: 7px;
-  color: #3d4566;
+  color: var(--museum-text-secondary);
   margin-left: 1px;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: color var(--museum-transition), background-color var(--museum-transition), border-color var(--museum-transition);
   cursor: pointer;
   flex-shrink: 0;
   /* 防止导航按钮被压缩 */
@@ -712,13 +676,29 @@ export default {
 }
 
 .equipment-management.active-tab {
-  background: #5778ff !important;
+  background: var(--museum-primary) !important;
   color: #fff !important;
+  border-color: var(--museum-primary) !important;
+  box-shadow: 0 6px 14px rgba(181, 138, 76, 0.2);
+}
+
+.equipment-management:not(.active-tab):hover {
+  border-color: var(--museum-border);
+  background: var(--museum-surface-muted);
+  color: var(--museum-text);
 }
 
 .equipment-management img {
-  width: 15px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: grayscale(1) sepia(0.55) saturate(1.3) hue-rotate(352deg) !important;
+  opacity: 0.82;
+}
+
+.equipment-management.active-tab img {
+  filter: brightness(0) invert(1) !important;
+  opacity: 1;
 }
 
 .search-container {
@@ -738,9 +718,9 @@ export default {
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #e4e6ef;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--museum-border);
+  border-radius: 10px;
+  box-shadow: var(--museum-shadow-md);
   z-index: 1000;
   margin-top: 2px;
 }
@@ -750,9 +730,9 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--museum-border);
   font-size: 12px;
-  color: #909399;
+  color: var(--museum-text-muted);
 }
 
 .clear-history-btn {
@@ -778,11 +758,11 @@ export default {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 12px;
-  color: #606266;
+  color: var(--museum-text-secondary);
 }
 
 .search-history-item:hover {
-  background-color: #f5f7fa;
+  background-color: var(--museum-surface-muted);
 }
 
 .clear-item-icon {
@@ -812,22 +792,22 @@ export default {
 }
 
 .custom-search-input>>>.el-input__inner {
-  height: 18px;
-  border-radius: 9px;
+  height: 36px;
+  border-radius: 10px;
   background-color: #fff;
-  border: 1px solid #e4e6ef;
-  padding-left: 8px;
-  font-size: 9px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--museum-border);
+  padding-left: 12px;
+  font-size: 13px;
+  box-shadow: none;
   width: 100%;
 }
 
 .search-icon {
   cursor: pointer;
-  color: #909399;
-  margin-right: 3px;
-  font-size: 9px;
-  line-height: 18px;
+  color: var(--museum-primary-hover);
+  margin-right: 6px;
+  font-size: 14px;
+  line-height: 36px;
 }
 
 .custom-search-input::v-deep .el-input__suffix-inner {

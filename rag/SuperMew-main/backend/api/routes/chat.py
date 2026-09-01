@@ -1,5 +1,5 @@
 import json
-import re
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -7,9 +7,11 @@ from fastapi.responses import StreamingResponse
 from backend.chat import chat_with_agent, chat_with_agent_stream
 from backend.db.models import User
 from backend.infra.auth import get_current_user
+from backend.infra.provider_errors import classify_provider_error
 from backend.schemas import ChatRequest, ChatResponse
 
 router = APIRouter(tags=["chat"])
+logger = logging.getLogger("chat.api")
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -21,22 +23,16 @@ async def chat_endpoint(request: ChatRequest, current_user: User = Depends(get_c
             return ChatResponse(**resp)
         return ChatResponse(response=resp)
     except Exception as e:
-        message = str(e)
-        match = re.search(r"Error code:\s*(\d{3})", message)
-        if match:
-            code = int(match.group(1))
-            if code == 429:
-                raise HTTPException(
-                    status_code=429,
-                    detail=(
-                        "上游模型服务触发限流/额度限制（429）。请检查账号额度/模型状态。\n"
-                        f"原始错误：{message}"
-                    ),
-                )
-            if code in (401, 403):
-                raise HTTPException(status_code=code, detail=message)
-            raise HTTPException(status_code=code, detail=message)
-        raise HTTPException(status_code=500, detail=message)
+        public_error = classify_provider_error(e)
+        logger.error(
+            "chat request failed | error_type=%s | code=%s",
+            type(e).__name__,
+            public_error.code,
+        )
+        raise HTTPException(
+            status_code=public_error.status_code,
+            detail=public_error.detail,
+        ) from e
 
 
 @router.post("/chat/stream")
@@ -51,7 +47,18 @@ async def chat_stream_endpoint(request: ChatRequest, current_user: User = Depend
             ):
                 yield chunk
         except Exception as e:
-            error_data = {"type": "error", "content": str(e)}
+            public_error = classify_provider_error(e)
+            logger.error(
+                "chat stream failed | error_type=%s | code=%s",
+                type(e).__name__,
+                public_error.code,
+            )
+            error_data = {
+                "type": "error",
+                "code": public_error.code,
+                "content": public_error.detail,
+                "retryable": public_error.retryable,
+            }
             yield f"data: {json.dumps(error_data)}\n\n"
 
     return StreamingResponse(
