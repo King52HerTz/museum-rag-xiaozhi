@@ -584,7 +584,7 @@ export default {
   'button.close': '關閉',
 
   // 系统信息
-  'system.name': '小智服務',
+  'system.name': '智博導覽服務',
 
   // 声纹相关
   'voiceprint.management': '聲紋管理',
@@ -723,8 +723,8 @@ export default {
 
   // 首頁文本
   'home.addAgent': '添加智能體',
-  'home.greeting': '你好小智',
-  'home.wish': '讓我們度過美好的一天！',
+  'home.greeting': '歡迎回來',
+  'home.wish': '讓知識連接文物與每一位遊客',
   'home.languageModel': '語言模型',
   'home.voiceModel': '音色模型',
   'home.configureRole': '配置角色',
