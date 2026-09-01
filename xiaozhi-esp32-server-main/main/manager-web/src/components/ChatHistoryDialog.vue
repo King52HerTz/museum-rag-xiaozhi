@@ -40,7 +40,7 @@
                             {{ message.content }}
                         </div>
                         <div v-else class="message-item" :class="{ 'user-message': message.chatType === 1, 'tool-message': message.chatType === 3 }">
-                            <img :src="message.chatType === 1 ? getUserAvatar(currentSessionId) : require('@/assets/xiaozhi-logo.png')"
+                            <img :src="message.chatType === 1 ? getUserAvatar(currentSessionId) : require('@/assets/brand/zhibo-mark.svg')"
                                 class="avatar" />
                             <div class="message-content">
                                 <template v-if="Array.isArray(extractContentFromString(message.content))">
@@ -192,7 +192,7 @@ export default {
                 return {
                     status: 'success',
                     title: '已调用博物馆知识库',
-                    detail: `检索结果已返回${contextCount > 0 ? `，识别到约 ${contextCount} 个资料片段` : ''}；最终回答由小智服务端交给大模型生成。`,
+                    detail: `检索结果已返回${contextCount > 0 ? `，识别到约 ${contextCount} 个资料片段` : ''}；最终回答由智博导览服务交给大模型生成。`,
                     callCount: calls.length
                 };
             }
@@ -218,7 +218,7 @@ export default {
             return {
                 status: 'pending',
                 title: '已发起博物馆知识库调用',
-                detail: '聊天记录中暂未找到对应的工具结果；请以小智服务端日志为最终依据。',
+                detail: '聊天记录中暂未找到对应的工具结果；请以智博导览服务端日志为最终依据。',
                 callCount: calls.length
             };
         },

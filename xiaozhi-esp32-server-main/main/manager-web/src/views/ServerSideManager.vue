@@ -12,7 +12,7 @@
               <div class="museum-device-heading">
                 <div>
                   <h3>智博导览设备连接</h3>
-                  <p>设备通过 OTA 获取这里的 WebSocket 地址。切换到本地小智服务端后，设备和运行服务的电脑必须在同一局域网。</p>
+                  <p>设备通过 OTA 获取这里的 WebSocket 地址。切换到本地智博导览服务后，设备和运行服务的电脑必须在同一局域网。</p>
                 </div>
                 <el-tag :type="websocketParam ? 'success' : 'warning'">
                   {{ websocketParam ? '已读取 server.websocket' : '未读取配置' }}
