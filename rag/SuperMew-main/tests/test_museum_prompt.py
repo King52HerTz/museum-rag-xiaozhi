@@ -46,6 +46,15 @@ class MuseumPromptTests(unittest.TestCase):
         self.assertIn("INSUFFICIENT_EVIDENCE", prompt)
         self.assertIn("不得使用模型常识补造", prompt)
 
+    def test_system_prompt_requires_spoken_guide_style(self):
+        prompt = _read_system_prompt()
+
+        self.assertIn("先给结论", prompt)
+        self.assertIn("现场感", prompt)
+        self.assertIn("约80到180字", prompt)
+        self.assertIn("不使用固定小标题", prompt)
+        self.assertIn("不要把缺口扩写成大段免责声明", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()
