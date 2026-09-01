@@ -1,9 +1,7 @@
 <template>
-  <div class="copyright">
+  <div v-if="hasFiling" class="copyright">
     <div class="footer-content">
-      <span>{{ year }} {{ name }} {{ version }}</span>
-      <template v-if="beianGaNum !== 'null'">
-        <span v-if="beianIcpNum !== 'null' || name">|</span>
+      <template v-if="hasGaFiling">
         <a :href="'http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=' + beianGaNum" target="_blank"
           rel="noopener" class="beian-link">
           <img
@@ -12,8 +10,7 @@
           <span class="beian-text">{{ beianGaNum }}</span>
         </a>
       </template>
-      <template v-if="beianIcpNum !== 'null'">
-        <span v-if="name">|</span>
+      <template v-if="hasIcpFiling">
         <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" class="beian-link">
           <span class="beian-text">{{ beianIcpNum }}</span>
         </a>
@@ -29,12 +26,18 @@ export default {
   name: 'VersionFooter',
   computed: {
     ...mapState({
-      version: state => state.pubConfig.version,
-      name: state => state.pubConfig.name,
       beianIcpNum: state => state.pubConfig.beianIcpNum,
-      beianGaNum: state => state.pubConfig.beianGaNum,
-      year: state => state.pubConfig.year
-    })
+      beianGaNum: state => state.pubConfig.beianGaNum
+    }),
+    hasFiling() {
+      return this.hasGaFiling || this.hasIcpFiling;
+    },
+    hasGaFiling() {
+      return Boolean(this.beianGaNum && this.beianGaNum !== 'null');
+    },
+    hasIcpFiling() {
+      return Boolean(this.beianIcpNum && this.beianIcpNum !== 'null');
+    }
   },
   mounted() {
     this.$store.dispatch('fetchPubConfig')
