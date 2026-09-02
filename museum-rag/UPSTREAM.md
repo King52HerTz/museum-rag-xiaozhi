@@ -18,7 +18,7 @@
 - 本次已成功更新 `rag/SuperMew-upstream` 的远程引用；`upstream/main` 当前为
   `23f8f14970954d50ab5c3f7af97919935cccde4d`（提交时间 2026-08-28）。
 - 此前的连接重置已恢复，但仍以本次成功 fetch 的提交作为迁移基线，不把未验证的远程状态写入运行副本。
-- 当前运行副本 `SuperMew-main` 与纯官方基线的核心 `pipeline.py`、`utils.py` 存在较大差异，
+- 当前运行副本 `museum-rag` 与纯官方基线的核心 `pipeline.py`、`utils.py` 存在较大差异，
   两者目前不能视为已同步。
 - 在获取最新上游并完成差异审查、回归测试前，不将同步分支合并到主分支。
 
@@ -29,7 +29,7 @@
 - 上游完整测试套件在 Windows 上无法收集：其技能注册表要求 Linux 的
   `O_DIRECTORY`/`O_NOFOLLOW`，沙箱测试还依赖 Unix `resource` 模块。
 - 可在本机运行的 RAG、桥接、文档加载、Provider 和结构化输出测试结果为：53 passed、10 个子测试通过。
-- 因此下一批迁移必须按模块边界进行，不能把上游目录整体复制到 `SuperMew-main`。
+- 因此下一批迁移必须按模块边界进行，不能把上游目录整体复制到 `museum-rag`。
 - 第一批结果语义迁移已完成：新增 `RetrievalOutcome` 及缺口提示工具，并将结果写入兼容的
   `rag_trace.retrieval_outcome` 字段；未替换检索流程、桥接响应或小智插件协议。该批次提交为
   `e59cde2 feat(rag): expose stable retrieval outcomes`，当前稳定副本测试为 21 passed、11 个子测试通过。
