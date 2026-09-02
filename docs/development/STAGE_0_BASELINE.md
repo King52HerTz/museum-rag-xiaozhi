@@ -21,9 +21,9 @@
 
 当前工作区仍有未提交的 HITL 实验性改动，文件为：
 
-- `rag/SuperMew-main/backend/chat/request_context.py`
-- `rag/SuperMew-main/backend/chat/runtime.py`
-- `rag/SuperMew-main/backend/tools/knowledge.py`
+- `museum-rag/backend/chat/request_context.py`
+- `museum-rag/backend/chat/runtime.py`
+- `museum-rag/backend/tools/knowledge.py`
 
 这些改动本阶段不纳入稳定基线，也不应随阶段 0 文档一起发布。它们先保留，后续单独决定是否继续或撤销。
 

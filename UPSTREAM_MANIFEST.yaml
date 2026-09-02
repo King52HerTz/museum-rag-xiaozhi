@@ -8,7 +8,7 @@ updated_at: 2026-08-30
 components:
   xiaozhi:
     source: https://github.com/xinnan-tech/xiaozhi-esp32-server.git
-    local_path: xiaozhi-esp32-server-main
+    local_path: zhibo-guide-platform
     local_source_type: vendored_snapshot
     local_commit: unknown
     checked_upstream_branch: main
@@ -23,7 +23,7 @@ components:
   supermew:
     source: https://github.com/icey1287/SuperMew.git
     fork: https://github.com/King52HerTz/SuperMew-museum.git
-    local_path: rag/SuperMew-main
+    local_path: museum-rag
     local_source_type: vendored_snapshot
     local_commit: unknown
     checked_upstream_branch: main

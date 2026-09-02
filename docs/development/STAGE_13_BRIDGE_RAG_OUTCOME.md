@@ -10,7 +10,7 @@
 
 ## 已完成改动
 
-- `rag/SuperMew-main/backend/api/routes/museum.py`
+- `museum-rag/backend/api/routes/museum.py`
   - 在兼容现有响应结构的前提下增加 `trace.retrieval_outcome` 和
     `trace.retrieval_status`。
   - 有有效片段且没有检索降级时返回 `ANSWERABLE / answerable`。
@@ -18,12 +18,12 @@
   - 发生 embedding、向量库或 Provider 降级且没有可靠片段时返回
     `INSUFFICIENT_EVIDENCE / insufficient_evidence`，并提示当前无法确认知识库是否有答案。
   - `contexts`、旧 trace 字段和 `need_trace=false` 的行为保持兼容。
-- `xiaozhi-esp32-server-main/main/xiaozhi-server/plugins_func/functions/search_museum_knowledge.py`
+- `zhibo-guide-platform/main/xiaozhi-server/plugins_func/functions/search_museum_knowledge.py`
   - 消费桥接返回的结果语义。
   - `NO_KNOWLEDGE` 继续引导游客换一种问法，不把空结果交给 LLM 自由发挥。
   - `INSUFFICIENT_EVIDENCE` 时明确要求 LLM 只回答片段支持的内容，并披露资料不足。
   - 将 `coverage_gap_questions` 传入导览上下文，要求缺口部分不要猜测。
-- `rag/SuperMew-main/tests/test_museum_bridge_contract.py`
+- `museum-rag/tests/test_museum_bridge_contract.py`
   - 增加可回答、无知识和检索降级三种桥接结果的契约测试。
 
 ## 验证结果

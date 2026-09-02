@@ -5,7 +5,7 @@
 ## 目标
 
 在隔离的 SuperMew 上游升级分支先建立可重复的资料和运行时门禁，再决定是否迁移上游运行时模块。
-本阶段不改变当前正在承担设备演示的 `rag/SuperMew-main`。
+本阶段不改变当前正在承担设备演示的 `museum-rag`。
 
 ## 已完成改动
 
@@ -48,7 +48,7 @@ uv run --no-sync python scripts/check_museum_eval_compat.py
 - 本阶段没有运行 live 模型评测，不消耗模型额度，也没有修改本地 `.env`。
 - v2 评测集暂不替换发布门禁；真实质量仍须把同一批资料上传到独立索引后，用 `run` 生成
   `live_rag` Observation，再审查答案、证据、路由和 Provider failure rate。
-- 本阶段没有把隔离上游代码复制到 `rag/SuperMew-main`，没有修改小智插件、硬件或 `main` 分支。
+- 本阶段没有把隔离上游代码复制到 `museum-rag`，没有修改小智插件、硬件或 `main` 分支。
 
 ## 提交
 

@@ -14,8 +14,8 @@
 
 稳定版范围：
 
-- 小智管理端：`xiaozhi-esp32-server-main/main/manager-web`；
-- 稳定版 RAG：`rag/SuperMew-main`；
+- 小智管理端：`zhibo-guide-platform/main/manager-web`；
+- 稳定版 RAG：`museum-rag`；
 - 两个系统之间已经跑通的 manager-api / RAG 桥接链路。
 
 ## 2. 当前问题

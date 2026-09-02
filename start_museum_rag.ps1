@@ -11,11 +11,11 @@ $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $repoRoot = $PSScriptRoot
-$ragRoot = Join-Path $repoRoot "rag\SuperMew-main"
+$ragRoot = Join-Path $repoRoot "museum-rag"
 $ragFrontendRoot = Join-Path $ragRoot "frontend"
-$managerApiRoot = Join-Path $repoRoot "xiaozhi-esp32-server-main\main\manager-api"
-$managerWebRoot = Join-Path $repoRoot "xiaozhi-esp32-server-main\main\manager-web"
-$xiaozhiRoot = Join-Path $repoRoot "xiaozhi-esp32-server-main\main\xiaozhi-server"
+$managerApiRoot = Join-Path $repoRoot "zhibo-guide-platform\main\manager-api"
+$managerWebRoot = Join-Path $repoRoot "zhibo-guide-platform\main\manager-web"
+$xiaozhiRoot = Join-Path $repoRoot "zhibo-guide-platform\main\xiaozhi-server"
 $runtimeRoot = Join-Path $repoRoot "runtime-logs\museum-startup"
 $logsRoot = Join-Path $runtimeRoot "logs"
 $stateFile = Join-Path $runtimeRoot "state.json"
@@ -308,7 +308,7 @@ function Ensure-RagDependencies {
     try {
         & docker compose up -d
         if ($LASTEXITCODE -ne 0) {
-            throw "SuperMew Docker dependencies failed to start."
+            throw "museum-rag Docker dependencies failed to start."
         }
     }
     finally {
@@ -515,7 +515,7 @@ else {
 
 $ragIndex = Join-Path $ragFrontendRoot "dist\index.html"
 if (-not (Test-Path -LiteralPath $ragIndex)) {
-    Invoke-External -Name "Build SuperMew frontend" -WorkingDirectory $ragFrontendRoot -FilePath $npmPath -ArgumentList @("run", "build")
+    Invoke-External -Name "Build museum-rag frontend" -WorkingDirectory $ragFrontendRoot -FilePath $npmPath -ArgumentList @("run", "build")
 }
 
 $managerJar = Join-Path $managerApiRoot "target\xiaozhi-esp32-api.jar"

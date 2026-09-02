@@ -16,7 +16,7 @@
 
 ## 已完成的升级保护层
 
-在 `rag/SuperMew-main/tests/test_museum_bridge_contract.py` 增加了不依赖 Milvus、Redis、PostgreSQL 或模型服务的回归测试，覆盖：
+在 `museum-rag/tests/test_museum_bridge_contract.py` 增加了不依赖 Milvus、Redis、PostgreSQL 或模型服务的回归测试，覆盖：
 
 - docx、pdf、Excel 以及现有 HTML 文档扩展名校验；
 - 博物馆检索请求默认值和 `top_k` 边界；

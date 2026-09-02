@@ -6,50 +6,39 @@
 
 !.gitignore
 !README.md
+!THIRD_PARTY_NOTICES.md
 !start_museum_rag.ps1
 !start_museum_rag.cmd
-!STAGE_0_BASELINE.md
 !UPSTREAM_MANIFEST.yaml
 !UPSTREAM_SYNC_POLICY.md
-!UPSTREAM_DIFF_REPORT.md
-!STAGE_2_SUPERMEW_VALIDATION.md
-!STAGE_2B_SUPERMEW_CORE_UPGRADE.md
-!STAGE_2C_CHAT_HITL.md
-!STAGE_3_INTEGRATION_SMOKE.md
-!STAGE_4_XIAOZHI_LOCAL_SERVICE.md
-!STAGE_8_RAG_AUDIT.md
-!STAGE_9_MAWANGDUI_UPSTREAM.md
-!STAGE_10_RAG_PROVIDER_SAFETY.md
-!STAGE_11_MUSEUM_BRIDGE_SAFETY.md
-!STAGE_12_RAG_AUDIT_PANEL.md
-!STAGE_13_BRIDGE_RAG_OUTCOME.md
-!STAGE_14_MAWANGDUI_EVAL_GATE.md
-!STAGE_15_MAWANGDUI_EVAL.md
 
-# Keep RAG system code
-!/rag/
-/rag/*
-!/rag/SuperMew-main/
-!/rag/SuperMew-main/**
+# Development records are kept together instead of cluttering the project root.
+!/docs/
+!/docs/development/
+!/docs/development/**
+!/docs/screenshots/
+!/docs/screenshots/*.png
 
-# Keep xiaozhi server / manager source code
-!/xiaozhi-esp32-server-main/
-/xiaozhi-esp32-server-main/*
-!/xiaozhi-esp32-server-main/main/
-!/xiaozhi-esp32-server-main/main/README.md
-!/xiaozhi-esp32-server-main/main/README_en.md
-!/xiaozhi-esp32-server-main/main/manager-api/
-!/xiaozhi-esp32-server-main/main/manager-api/**
-!/xiaozhi-esp32-server-main/main/manager-web/
-!/xiaozhi-esp32-server-main/main/manager-web/**
-!/xiaozhi-esp32-server-main/main/xiaozhi-server/
-!/xiaozhi-esp32-server-main/main/xiaozhi-server/**
-!/xiaozhi-esp32-server-main/docker-compose*.yml
-!/xiaozhi-esp32-server-main/.gitignore
+# Keep the two product modules (renamed from their upstream project folders).
+!/museum-rag/
+!/museum-rag/**
+
+!/zhibo-guide-platform/
+/zhibo-guide-platform/*
+!/zhibo-guide-platform/main/
+!/zhibo-guide-platform/main/README.md
+!/zhibo-guide-platform/main/README_en.md
+!/zhibo-guide-platform/main/manager-api/
+!/zhibo-guide-platform/main/manager-api/**
+!/zhibo-guide-platform/main/manager-web/
+!/zhibo-guide-platform/main/manager-web/**
+!/zhibo-guide-platform/main/xiaozhi-server/
+!/zhibo-guide-platform/main/xiaozhi-server/**
+!/zhibo-guide-platform/.gitignore
 
 # Not part of this upload scope
-/xiaozhi-esp32-server-main/main/digital-human/
-/xiaozhi-esp32-server-main/main/manager-mobile/
+/zhibo-guide-platform/main/digital-human/
+/zhibo-guide-platform/main/manager-mobile/
 
 # Explicitly ignore non-code / local-only top-level folders
 /doc/
@@ -101,6 +90,7 @@
 
 # Downloaded model files and large runtime assets
 **/models/
+**/volumes/
 **/asr-models/
 **/wakeword_runtime/models/
 **/public/generator/assets/
