@@ -68,7 +68,7 @@ POST /api/museum/query
 
 ## 自动化验证
 
-在 `rag/SuperMew-main` 虚拟环境中执行：
+在 `museum-rag` 虚拟环境中执行：
 
 ```text
 python -m unittest discover -s tests -p "test_*.py" -v

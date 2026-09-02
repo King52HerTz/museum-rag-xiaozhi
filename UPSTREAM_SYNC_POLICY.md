@@ -31,6 +31,19 @@ upstream: supermew @ <commit>
 museum: <feature>
 ```
 
+## 当前分支清单（2026-08-30）
+
+根项目 `museum-rag-xiaozhi` 目前保留一个稳定分支和若干历史检查点：
+
+- `main`：稳定演示基线；
+- `codex/stage2b-*` 到 `codex/stage8-*`：已完成阶段的回滚检查点；
+- `codex/sync-supermew-upstream-20260830`：当前集成文档和升级候选分支。
+
+这些分支不会同时部署，也不代表多套运行环境。后续开发不再创建新的阶段分支；阶段 16 和后续
+评测继续使用当前集成分支，SuperMew 代码继续使用个人 Fork 的 `codex/museum-upgrade`。
+待真实 live 门禁通过后，再把确认无误的提交合并到 `main`，并为已合并的历史分支打标签后统一
+归档或删除。没有明确确认前不执行远程分支删除。
+
 ## SuperMew Fork 推送保护
 
 SuperMew 的原始仓库不是本项目所有者的仓库。当前升级副本采用以下远程边界：

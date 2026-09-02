@@ -39,7 +39,7 @@ SuperMew 放到独立目录和独立分支中验证，避免直接覆盖当前�
 - 已在 `rag/SuperMew-upstream` 单独 clone，当前上游快照为
   `23f8f14970954d50ab5c3f7af97919935cccde4d`。
 - 已创建独立工作分支 `codex/museum-upgrade`；上游 `main` 和当前稳定副本
-  `rag/SuperMew-main` 均未被覆盖。
+  `museum-rag` 均未被覆盖。
 - 已增加 UTF-8 Markdown 的上传校验、解析、索引和文档类型显示，保持 PDF、DOCX、
   Excel 等已有格式兼容。
 - 该改动已提交为 `3e90d6e feat(museum): support native markdown corpus uploads`。

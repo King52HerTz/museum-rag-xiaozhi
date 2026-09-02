@@ -8,7 +8,7 @@
 
 ## 分支边界
 
-- 稳定运行副本：`rag/SuperMew-main`，本阶段不修改。
+- 稳定运行副本：`museum-rag`，本阶段不修改。
 - 上游隔离副本：`rag/SuperMew-upstream` 的 `codex/museum-upgrade`，只在这里新增评测资产。
 - 个人 Fork：`https://github.com/King52HerTz/SuperMew-museum`，升级分支已推送到该仓库；原作者仓库只用于拉取更新。
 - 主项目集成分支：只记录阶段文档和桥接状态，不把上游仓库整体覆盖到 `main`。
