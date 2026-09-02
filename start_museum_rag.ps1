@@ -329,6 +329,13 @@ function Ensure-RagDependencies {
     }
 }
 
+function Wait-RagDependencies {
+    Write-Step "Waiting for museum-rag infrastructure services."
+    Wait-Port -Name "RAG PostgreSQL" -Port 15432 -TimeoutSeconds 120
+    Wait-Port -Name "RAG Redis" -Port 6379 -TimeoutSeconds 120
+    Wait-Port -Name "Milvus" -Port 19530 -TimeoutSeconds 180
+}
+
 function Get-DockerContainerEnvironment {
     param([string]$ContainerName)
 
@@ -512,6 +519,7 @@ if (-not $SkipDocker) {
 else {
     Write-Warn "Docker startup was skipped. Ensure PostgreSQL, Redis and Milvus are already running."
 }
+Wait-RagDependencies
 
 $ragIndex = Join-Path $ragFrontendRoot "dist\index.html"
 if (-not (Test-Path -LiteralPath $ragIndex)) {
