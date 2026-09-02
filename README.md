@@ -114,7 +114,7 @@ POST http://127.0.0.1:8003/xiaozhi/museum/rag/query
 
 以下截图来自本项目稳定版本地页面，截图不包含密钥和私有资料：
 
-![智博导览管理平台](docs/screenshots/manager-dashboard.png)
+![智博导览管理平台登录入口](docs/screenshots/manager-login.png)
 
 ![博物馆知识库资料管理](docs/screenshots/museum-knowledge-base.png)
 
