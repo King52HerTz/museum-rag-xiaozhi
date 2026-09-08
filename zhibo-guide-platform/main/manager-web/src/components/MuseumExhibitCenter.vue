@@ -66,8 +66,23 @@
           <el-form-item label="类别" prop="category"><el-input v-model="form.category" maxlength="80" /></el-form-item>
         </div>
         <el-form-item label="游客端摘要" prop="summary"><el-input v-model="form.summary" type="textarea" :rows="3" maxlength="1200" show-word-limit /></el-form-item>
-        <div class="form-grid">
-          <el-form-item label="公开图片地址"><el-input v-model="form.imageUrl" placeholder="https://… 或站内 /media/…" /></el-form-item>
+        <div class="image-sort-grid">
+          <el-form-item label="展品主图">
+            <div class="image-editor">
+              <div class="image-preview" :class="{ empty: !form.imageUrl }">
+                <img v-if="form.imageUrl" :src="form.imageUrl" :alt="form.name || '展品图片预览'" />
+                <div v-else><i class="el-icon-picture-outline"></i><span>上传后在游客端展示</span></div>
+              </div>
+              <div class="image-actions">
+                <el-upload action="#" accept="image/jpeg,image/png,image/webp" :show-file-list="false" :http-request="uploadImage" :before-upload="validateImage">
+                  <el-button size="small" type="primary" plain :loading="imageUploading" icon="el-icon-upload2">{{ form.imageUrl ? '替换图片' : '上传图片' }}</el-button>
+                </el-upload>
+                <el-button v-if="form.imageUrl" size="small" type="text" @click="clearImage">移除</el-button>
+                <small>JPG、PNG 或 WebP，最大 8 MB</small>
+              </div>
+            </div>
+            <el-input v-model="form.imageUrl" class="image-url-input" size="small" placeholder="也可以粘贴 HTTPS 图片地址" aria-label="公开图片地址" @input="clearImageHash" />
+          </el-form-item>
           <el-form-item label="展示排序"><el-input-number v-model="form.sort" :min="0" :max="9999" controls-position="right" /></el-form-item>
         </div>
         <el-form-item label="主题标签"><el-input v-model="tagText" placeholder="使用中文逗号分隔，如：马王堆精选，汉代生活" /></el-form-item>
@@ -102,7 +117,7 @@ export default {
   name: 'MuseumExhibitCenter',
   data() {
     return {
-      loading: false, saving: false, dialogVisible: false, items: [], total: 0, tagText: '',
+      loading: false, saving: false, imageUploading: false, dialogVisible: false, items: [], total: 0, tagText: '',
       filters: { page: 1, limit: 10, keyword: '', status: '' },
       form: freshForm(),
       statusOptions: [{ label: '全部', value: '' }, { label: '草稿', value: 'DRAFT' }, { label: '已发布', value: 'PUBLISHED' }, { label: '已下线', value: 'OFFLINE' }],
@@ -117,6 +132,28 @@ export default {
   methods: {
     emptyObservation() { return { title: '', detail: '' }; },
     emptySource() { return { title: '', page: '', excerpt: '', status: 'verified' }; },
+    validateImage(file) {
+      const supported = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+      if (!supported) this.$message.error('仅支持 JPG、PNG 或 WebP 图片');
+      if (file.size > 8 * 1024 * 1024) this.$message.error('展品图片不能超过 8 MB');
+      return supported && file.size <= 8 * 1024 * 1024;
+    },
+    uploadImage({ file, onSuccess, onError }) {
+      this.imageUploading = true;
+      Api.museumExhibit.uploadImage(file, ({ data }) => {
+        const result = data.data || {};
+        this.form.imageUrl = result.imageUrl || '';
+        this.form.imageSha256 = result.imageSha256 || '';
+        this.imageUploading = false;
+        this.$message.success('展品图片已上传');
+        onSuccess(result);
+      }, (error) => {
+        this.imageUploading = false;
+        onError(error);
+      });
+    },
+    clearImage() { this.form.imageUrl = ''; this.form.imageSha256 = ''; },
+    clearImageHash() { this.form.imageSha256 = ''; },
     load() {
       this.loading = true;
       Api.museumExhibit.list(this.filters, ({ data }) => { this.items = (data.data && data.data.list) || []; this.total = Number((data.data && data.data.total) || 0); this.loading = false; }, () => { this.loading = false; });
@@ -173,7 +210,17 @@ export default {
 .exhibit-identity small, .secondary { margin-top: 4px; color: #8a96a8; font-size: 12px; }
 .danger-link { color: #d45b5b; }
 .pagination { margin-top: 20px; text-align: right; }
-.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+.form-grid, .image-sort-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+.image-sort-grid { grid-template-columns: minmax(0, 1fr) 160px; }
+.image-editor { display: flex; align-items: center; gap: 14px; }
+.image-preview { width: 112px; height: 84px; flex: 0 0 auto; overflow: hidden; border: 1px solid #d9e2ec; border-radius: 12px; background: #f5f7fa; }
+.image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.image-preview.empty { display: grid; place-items: center; color: #8a96a8; border-style: dashed; }
+.image-preview.empty div { display: grid; justify-items: center; gap: 5px; padding: 8px; text-align: center; font-size: 11px; line-height: 1.35; }
+.image-preview.empty i { color: #5b897e; font-size: 24px; }
+.image-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.image-actions small { width: 100%; color: #8a96a8; font-size: 12px; }
+.image-url-input { margin-top: 10px; }
 .array-section { margin-top: 18px; padding: 16px; background: #f7f9fc; border: 1px solid #e8edf3; border-radius: 12px; }
 .array-heading { margin-bottom: 12px; }
 .array-heading span { display: block; margin-top: 3px; }
@@ -181,5 +228,5 @@ export default {
 .two-columns { grid-template-columns: 180px minmax(0, 1fr) 34px; }
 .source-columns { grid-template-columns: minmax(0, 1fr) 105px 125px 34px; }
 .source-editor + .source-editor { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e1e7ef; }
-@media (max-width: 760px) { .status-summary { grid-template-columns: repeat(2, 1fr); } .content-toolbar { align-items: stretch; flex-direction: column; } .content-toolbar .el-input, .content-toolbar .el-select { width: 100%; } .form-grid { grid-template-columns: 1fr; } .two-columns, .source-columns { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .status-summary { grid-template-columns: repeat(2, 1fr); } .content-toolbar { align-items: stretch; flex-direction: column; } .content-toolbar .el-input, .content-toolbar .el-select { width: 100%; } .form-grid, .image-sort-grid { grid-template-columns: 1fr; } .two-columns, .source-columns { grid-template-columns: 1fr; } }
 </style>

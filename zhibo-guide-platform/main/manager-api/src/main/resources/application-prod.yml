@@ -64,3 +64,7 @@ museum-rag:
 museum:
   catalog:
     api-key: ${MUSEUM_CATALOG_API_KEY:}
+  assets:
+    directory: ${MUSEUM_ASSET_DIRECTORY:data/museum/exhibits}
+    public-base-url: ${MUSEUM_ASSET_PUBLIC_BASE_URL:/xiaozhi/museum/public/v1/assets}
+    max-bytes: ${MUSEUM_ASSET_MAX_BYTES:8388608}

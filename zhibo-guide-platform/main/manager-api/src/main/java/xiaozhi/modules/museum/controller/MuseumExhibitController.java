@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.museum.entity.MuseumExhibitEntity;
+import xiaozhi.modules.museum.service.MuseumExhibitAssetService;
 import xiaozhi.modules.museum.service.MuseumExhibitService;
 
 @RestController
@@ -27,6 +29,7 @@ import xiaozhi.modules.museum.service.MuseumExhibitService;
 @Tag(name = "博物馆展品内容")
 public class MuseumExhibitController {
     private final MuseumExhibitService exhibitService;
+    private final MuseumExhibitAssetService assetService;
 
     @GetMapping
     @Operation(summary = "分页查询展品")
@@ -40,6 +43,13 @@ public class MuseumExhibitController {
     @RequiresPermissions("sys:role:normal")
     public Result<MuseumExhibitEntity> create(@RequestBody MuseumExhibitEntity entity) {
         return new Result<MuseumExhibitEntity>().ok(exhibitService.create(entity));
+    }
+
+    @PostMapping("/image")
+    @Operation(summary = "上传展品公开图片")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
+        return new Result<Map<String, String>>().ok(assetService.store(file));
     }
 
     @PutMapping("/{id}")

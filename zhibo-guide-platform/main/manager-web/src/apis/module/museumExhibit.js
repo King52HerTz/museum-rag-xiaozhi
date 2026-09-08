@@ -1,10 +1,11 @@
 import { getServiceUrl } from '../api';
 import RequestService from '../httpRequest';
 
-function request(method, path, data, callback, errorCallback) {
+function request(method, path, data, callback, errorCallback, headers) {
   const builder = RequestService.sendRequest()
     .url(`${getServiceUrl()}/museum/exhibits${path}`)
     .method(method);
+  if (headers !== undefined) builder.header(headers);
   if (data !== undefined) builder.data(data);
   builder.success((res) => {
     RequestService.clearRequestTime();
@@ -18,6 +19,11 @@ export default {
   },
   create(data, callback, errorCallback) {
     request('POST', '', data, callback, errorCallback);
+  },
+  uploadImage(file, callback, errorCallback) {
+    const formData = new FormData();
+    formData.append('file', file);
+    request('POST', '/image', formData, callback, errorCallback, {});
   },
   update(id, data, callback, errorCallback) {
     request('PUT', `/${encodeURIComponent(id)}`, data, callback, errorCallback);
