@@ -40,8 +40,11 @@ public class MuseumRagController {
     public Result<Object> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "museum", required = false) String museum,
-            @RequestParam(value = "exhibition", required = false) String exhibition) {
-        return new Result<>().ok(museumRagService.uploadDocument(file, museum, exhibition));
+            @RequestParam(value = "exhibition", required = false) String exhibition,
+            @RequestParam(value = "exhibit_id", required = false) String exhibitId,
+            @RequestParam(value = "era", required = false) String era,
+            @RequestParam(value = "category", required = false) String category) {
+        return new Result<>().ok(museumRagService.uploadDocument(file, museum, exhibition, exhibitId, era, category));
     }
 
     @GetMapping("/documents/upload/jobs")
