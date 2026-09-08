@@ -28,3 +28,7 @@ museum-rag:
   timeout: 60000
   bridge-secret: replace-with-local-bridge-secret
   bridge-expire-seconds: 60
+
+museum:
+  catalog:
+    api-key: replace-with-local-catalog-api-key

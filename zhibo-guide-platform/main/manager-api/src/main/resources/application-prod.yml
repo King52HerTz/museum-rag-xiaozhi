@@ -60,3 +60,7 @@ museum-rag:
   timeout: ${MUSEUM_RAG_TIMEOUT:60000}
   bridge-secret: ${MUSEUM_RAG_BRIDGE_SECRET:replace-with-prod-bridge-secret}
   bridge-expire-seconds: ${MUSEUM_RAG_BRIDGE_EXPIRE_SECONDS:60}
+
+museum:
+  catalog:
+    api-key: ${MUSEUM_CATALOG_API_KEY:}
