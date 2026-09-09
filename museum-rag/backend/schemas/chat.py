@@ -22,6 +22,8 @@ class RetrievedChunk(StrictSchema):
     rrf_rank: Optional[int] = None
     rerank_score: Optional[float] = None
     local_rerank_score: Optional[float] = None
+    source_kind: Optional[Literal["knowledge_base", "official_web"]] = None
+    source_url: Optional[str] = None
 
 
 class RagTraceFields(StrictSchema):
@@ -91,6 +93,11 @@ class RagTraceFields(StrictSchema):
     document_diversity_applied: Optional[bool] = None
     query_intent: Optional[str] = None
     intent_rerank_applied: Optional[bool] = None
+    official_web_enabled: Optional[bool] = None
+    official_web_attempted: Optional[bool] = None
+    official_web_status: Optional[str] = None
+    official_web_error_code: Optional[str] = None
+    official_web_evidence_count: Optional[int] = None
     retrieval_boilerplate_stripped: Optional[bool] = None
     post_rerank_count: Optional[int] = None
     post_threshold_count: Optional[int] = None
@@ -121,6 +128,7 @@ class RagTraceFields(StrictSchema):
     expanded_retrieved_chunks: Optional[List[RetrievedChunk]] = None
     rewrite_retrieved_chunks: Optional[List[RetrievedChunk]] = None
     hitl_targeted_retrieved_chunks: Optional[List[RetrievedChunk]] = None
+    web_retrieved_chunks: Optional[List[RetrievedChunk]] = None
 
     complexity: Optional[str] = None
     complexity_reason: Optional[str] = None
@@ -195,6 +203,7 @@ def _normalize_trace_fields(trace: dict, fields: dict) -> dict:
         "expanded_retrieved_chunks",
         "rewrite_retrieved_chunks",
         "hitl_targeted_retrieved_chunks",
+        "web_retrieved_chunks",
     ):
         if key in normalized:
             normalized[key] = _normalize_chunks(normalized[key])

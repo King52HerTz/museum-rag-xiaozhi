@@ -5,6 +5,8 @@ export interface RetrievedChunk {
   rerank_score?: number | null;
   local_rerank_score?: number | null;
   text?: string;
+  source_kind?: 'knowledge_base' | 'official_web';
+  source_url?: string;
 }
 
 export interface RagTrace {
@@ -51,6 +53,11 @@ export interface RagTrace {
   retrieval_max_chunks_per_document?: number;
   document_diversity_applied?: boolean | null;
   retrieval_boilerplate_stripped?: boolean | null;
+  official_web_enabled?: boolean | null;
+  official_web_attempted?: boolean | null;
+  official_web_status?: string;
+  official_web_error_code?: string;
+  official_web_evidence_count?: number;
   coverage_gap_codes?: string[];
   coverage_gap_questions?: string[];
   expansion_type?: string;
@@ -65,6 +72,7 @@ export interface RagTrace {
   sub_traces?: any[];
   initial_retrieved_chunks?: RetrievedChunk[];
   expanded_retrieved_chunks?: RetrievedChunk[];
+  web_retrieved_chunks?: RetrievedChunk[];
 }
 
 export interface RagStep {
