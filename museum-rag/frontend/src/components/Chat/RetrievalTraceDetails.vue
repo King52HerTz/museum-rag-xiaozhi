@@ -91,6 +91,18 @@
         <div v-if="msg.ragTrace.rerank_retryable !== null && msg.ragTrace.rerank_retryable !== undefined" class="trace-line">
           Rerank可重试：{{ msg.ragTrace.rerank_retryable ? '是' : '否' }}
         </div>
+        <div v-if="msg.ragTrace.local_rerank_enabled !== null && msg.ragTrace.local_rerank_enabled !== undefined" class="trace-line">
+          本地实体重排已启用：{{ msg.ragTrace.local_rerank_enabled ? '是' : '否' }}
+        </div>
+        <div v-if="msg.ragTrace.local_rerank_applied !== null && msg.ragTrace.local_rerank_applied !== undefined" class="trace-line">
+          本地实体重排已执行：{{ msg.ragTrace.local_rerank_applied ? '是' : '否' }}
+        </div>
+        <div v-if="msg.ragTrace.retrieval_max_chunks_per_document" class="trace-line">
+          单文档优先片段上限：{{ msg.ragTrace.retrieval_max_chunks_per_document }}
+        </div>
+        <div v-if="msg.ragTrace.document_diversity_applied !== null && msg.ragTrace.document_diversity_applied !== undefined" class="trace-line">
+          文档多样化已执行：{{ msg.ragTrace.document_diversity_applied ? '是' : '否' }}
+        </div>
         <div v-if="msg.ragTrace.expansion_type" class="trace-line">
           扩展策略：{{ msg.ragTrace.expansion_type }}
         </div>
@@ -171,6 +183,9 @@
                 <span class="source-page">RRF名次：#{{ chunk.rrf_rank || (sIndex + 1) }}</span>
                 <span v-if="chunk.rerank_score !== null && chunk.rerank_score !== undefined" class="source-page">
                   Rerank分数：{{ Number(chunk.rerank_score).toFixed(4) }}
+                </span>
+                <span v-if="chunk.local_rerank_score !== null && chunk.local_rerank_score !== undefined" class="source-page">
+                  本地重排分：{{ Number(chunk.local_rerank_score).toFixed(0) }}
                 </span>
               </div>
               <div v-if="chunk.text" class="source-excerpt">{{ chunk.text }}</div>

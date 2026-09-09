@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import List, Tuple, Dict, Any, Literal, Optional
 import os
 import json
+import re
 import requests
 
 from backend.indexing.milvus_client import get_milvus_store
@@ -54,6 +55,10 @@ def _read_positive_int_env(name: str, default: int) -> int:
 RETRIEVAL_CANDIDATE_MULTIPLIER = _read_positive_int_env("RETRIEVAL_CANDIDATE_MULTIPLIER", 3)
 _RETRIEVAL_CANDIDATE_K_RAW = os.getenv("RETRIEVAL_CANDIDATE_K", "").strip()
 RETRIEVAL_TOP_K = _read_positive_int_env("RETRIEVAL_TOP_K", 8)
+LOCAL_LEXICAL_RERANK_ENABLED = os.getenv("LOCAL_LEXICAL_RERANK_ENABLED", "true").lower() != "false"
+RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = _read_positive_int_env(
+    "RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT", 2
+)
 
 
 def _read_float_env(name: str, default: float) -> float:
@@ -94,6 +99,10 @@ RETRIEVAL_TRACE_FIELDS = (
     "rerank_retryable",
     "rerank_timeout_seconds",
     "rerank_min_score",
+    "local_rerank_enabled",
+    "local_rerank_applied",
+    "retrieval_max_chunks_per_document",
+    "document_diversity_applied",
     "post_rerank_count",
     "post_threshold_count",
     "retrieval_empty",
@@ -287,6 +296,78 @@ def _sort_by_rank_score(docs: List[dict]) -> List[dict]:
     return sorted(docs, key=lambda item: _effective_score(item) or 0.0, reverse=True)
 
 
+_QUERY_FILLERS = (
+    "请介绍一下",
+    "介绍一下",
+    "请问",
+    "能不能",
+    "可以",
+    "一下",
+    "相关资料",
+    "有关资料",
+)
+
+
+def _normalize_lexical_text(value: str) -> str:
+    return "".join(re.findall(r"[\u4e00-\u9fffA-Za-z0-9]+", (value or "").lower()))
+
+
+def _query_ngrams(query: str) -> set[str]:
+    normalized = _normalize_lexical_text(query)
+    for filler in _QUERY_FILLERS:
+        normalized = normalized.replace(_normalize_lexical_text(filler), "")
+    terms: set[str] = set()
+    for size in range(2, min(4, len(normalized)) + 1):
+        terms.update(normalized[index:index + size] for index in range(len(normalized) - size + 1))
+    return terms
+
+
+def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
+    """用精确中文实体/关系短语补强 RRF；无匹配时保持原召回顺序。"""
+    terms = _query_ngrams(query)
+    reranked: List[dict] = []
+    for index, source in enumerate(docs, 1):
+        doc = dict(source)
+        text = _normalize_lexical_text(str(doc.get("text") or ""))
+        filename = _normalize_lexical_text(str(doc.get("filename") or ""))
+        text_score = sum(len(term) ** 2 for term in terms if term in text)
+        filename_score = sum(len(term) ** 2 for term in terms if term in filename)
+        doc["local_rerank_score"] = float(text_score + filename_score * 2)
+        doc.setdefault("rrf_rank", index)
+        reranked.append(doc)
+    return sorted(
+        reranked,
+        key=lambda item: (
+            item.get("local_rerank_score", 0.0),
+            -int(item.get("rrf_rank") or 0),
+        ),
+        reverse=True,
+    )
+
+
+def _prefer_document_diversity(docs: List[dict], top_k: int) -> Tuple[List[dict], bool]:
+    """优先限制单文档片段数；唯一文档不足时回填，确保不损失可用结果。"""
+    selected: List[dict] = []
+    deferred: List[dict] = []
+    counts: Dict[str, int] = defaultdict(int)
+    for doc in docs:
+        filename = str(doc.get("filename") or "")
+        if counts[filename] < RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:
+            selected.append(doc)
+            counts[filename] += 1
+        else:
+            deferred.append(doc)
+        if len(selected) >= top_k:
+            break
+
+    if len(selected) < top_k:
+        selected.extend(deferred[:top_k - len(selected)])
+    result = selected[:top_k]
+    original = docs[:top_k]
+    changed = [id(item) for item in result] != [id(item) for item in original]
+    return result, changed
+
+
 def dedupe_documents(docs: List[dict]) -> List[dict]:
     """按 chunk_id 去重；重复项保留更高 rank 分（rerank_score 优先）。"""
     by_key: Dict[str, dict] = {}
@@ -314,15 +395,31 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
         "rerank_retryable": None,
         "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
         "candidate_count": len(docs_with_rank),
+        "local_rerank_enabled": LOCAL_LEXICAL_RERANK_ENABLED,
+        "local_rerank_applied": False,
+        "retrieval_max_chunks_per_document": RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT,
+        "document_diversity_applied": False,
     }
-    if not docs_with_rank or not meta["rerank_enabled"]:
-        return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+    if not docs_with_rank:
+        return [], meta
+
+    def fallback() -> List[dict]:
+        ranked = _sort_by_rank_score(docs_with_rank)
+        if LOCAL_LEXICAL_RERANK_ENABLED:
+            ranked = _local_lexical_rerank(query, ranked)
+            meta["local_rerank_applied"] = True
+        diversified, changed = _prefer_document_diversity(ranked, top_k)
+        meta["document_diversity_applied"] = changed
+        return diversified
+
+    if not meta["rerank_enabled"]:
+        return fallback(), meta
 
     payload = {
         "model": RERANK_MODEL,
         "query": query,
         "documents": [doc.get("text", "") for doc in docs_with_rank],
-        "top_n": min(top_k, len(docs_with_rank)),
+        "top_n": len(docs_with_rank),
         "return_documents": False,
     }
 
@@ -345,7 +442,7 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
             meta["rerank_error"] = public_error.code
             meta["rerank_error_code"] = public_error.code
             meta["rerank_retryable"] = public_error.retryable
-            return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+            return fallback(), meta
 
         items = response.json().get("results", [])
         reranked = []
@@ -359,18 +456,20 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
                 reranked.append(doc)
 
         if reranked:
-            return reranked[:top_k], meta
+            diversified, changed = _prefer_document_diversity(reranked, top_k)
+            meta["document_diversity_applied"] = changed
+            return diversified, meta
 
         meta["rerank_error"] = "RERANK_EMPTY_RESPONSE"
         meta["rerank_error_code"] = "RERANK_EMPTY_RESPONSE"
         meta["rerank_retryable"] = False
-        return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+        return fallback(), meta
     except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
         public_error = classify_provider_error(e)
         meta["rerank_error"] = public_error.code
         meta["rerank_error_code"] = public_error.code
         meta["rerank_retryable"] = public_error.retryable
-        return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+        return fallback(), meta
 
 
 class RewritePlan(BaseModel):

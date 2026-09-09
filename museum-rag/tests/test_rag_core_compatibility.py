@@ -171,6 +171,66 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("MODEL_RATE_LIMITED", trace["rerank_error_code"])
         self.assertTrue(trace["rerank_retryable"])
 
+    def test_local_rerank_promotes_exact_person_and_relationship_evidence(self):
+        docs = [
+            {"filename": "辛追遗体.docx", "text": "辛追夫人的遗体保存与保护研究。", "score": 0.9},
+            {"filename": "妾辛追印.docx", "text": "辛追墓出土了妾辛追印。", "score": 0.8},
+            {
+                "filename": "03_利苍一家与西汉长沙国背景.docx",
+                "text": "辛追夫人与利苍的儿子利豨继承了父亲的爵位。",
+                "score": 0.5,
+            },
+        ]
+
+        reranked = utils._local_lexical_rerank("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertEqual("03_利苍一家与西汉长沙国背景.docx", reranked[0]["filename"])
+        self.assertGreater(reranked[0]["local_rerank_score"], reranked[1]["local_rerank_score"])
+
+    def test_document_diversity_prefers_other_sources_before_refill(self):
+        docs = [
+            {"filename": "A.docx", "text": "A1"},
+            {"filename": "A.docx", "text": "A2"},
+            {"filename": "A.docx", "text": "A3"},
+            {"filename": "B.docx", "text": "B1"},
+        ]
+
+        with patch.object(utils, "RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT", 2):
+            selected, changed = utils._prefer_document_diversity(docs, top_k=3)
+
+        self.assertEqual(["A1", "A2", "B1"], [item["text"] for item in selected])
+        self.assertTrue(changed)
+
+    def test_local_rerank_trace_survives_normalization(self):
+        trace = normalize_rag_trace(
+            {
+                "local_rerank_enabled": True,
+                "local_rerank_applied": True,
+                "retrieval_max_chunks_per_document": 2,
+                "document_diversity_applied": True,
+            }
+        )
+
+        self.assertTrue(trace["local_rerank_applied"])
+        self.assertTrue(trace["document_diversity_applied"])
+        self.assertEqual(2, trace["retrieval_max_chunks_per_document"])
+
+    def test_missing_external_reranker_uses_local_fallback(self):
+        docs = [
+            {"filename": "辛追遗体.docx", "text": "辛追遗体保护。", "score": 0.9},
+            {"filename": "利苍一家.docx", "text": "辛追的儿子利豨。", "score": 0.5},
+        ]
+
+        with (
+            patch.object(utils, "RERANK_ENABLED", False),
+            patch.object(utils, "LOCAL_LEXICAL_RERANK_ENABLED", True),
+        ):
+            ranked, meta = utils._rerank_documents("辛追的儿子利豨", docs, top_k=2)
+
+        self.assertEqual("利苍一家.docx", ranked[0]["filename"])
+        self.assertFalse(meta["rerank_applied"])
+        self.assertTrue(meta["local_rerank_applied"])
+
 
 if __name__ == "__main__":
     unittest.main()

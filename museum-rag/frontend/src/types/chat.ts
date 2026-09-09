@@ -3,6 +3,7 @@ export interface RetrievedChunk {
   page_number?: number;
   rrf_rank?: number;
   rerank_score?: number | null;
+  local_rerank_score?: number | null;
   text?: string;
 }
 
@@ -43,6 +44,10 @@ export interface RagTrace {
   rerank_error?: string;
   rerank_error_code?: string;
   rerank_retryable?: boolean | null;
+  local_rerank_enabled?: boolean | null;
+  local_rerank_applied?: boolean | null;
+  retrieval_max_chunks_per_document?: number;
+  document_diversity_applied?: boolean | null;
   coverage_gap_codes?: string[];
   coverage_gap_questions?: string[];
   expansion_type?: string;
