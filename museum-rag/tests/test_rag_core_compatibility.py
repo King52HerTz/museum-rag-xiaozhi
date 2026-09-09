@@ -187,6 +187,25 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("03_利苍一家与西汉长沙国背景.docx", reranked[0]["filename"])
         self.assertGreater(reranked[0]["local_rerank_score"], reranked[1]["local_rerank_score"])
 
+    def test_relationship_target_outweighs_repeated_broad_subject(self):
+        docs = [
+            {
+                "filename": "辛追夫人与遗体保护边界.docx",
+                "text": "辛追夫人的遗体保护和数字化研究。",
+                "score": 0.9,
+            },
+            {
+                "filename": "03_利苍一家与西汉长沙国背景.docx",
+                "text": "利苍一家三口包括辛追和利豨。",
+                "score": 0.5,
+            },
+        ]
+
+        reranked = utils._local_lexical_rerank("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertEqual("03_利苍一家与西汉长沙国背景.docx", reranked[0]["filename"])
+        self.assertEqual({"利豨"}, utils._query_focus_terms("辛追夫人的儿子利豨"))
+
     def test_document_diversity_prefers_other_sources_before_refill(self):
         docs = [
             {"filename": "A.docx", "text": "A1"},

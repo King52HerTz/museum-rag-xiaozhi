@@ -322,9 +322,18 @@ def _query_ngrams(query: str) -> set[str]:
     return terms
 
 
+def _query_focus_terms(query: str) -> set[str]:
+    """提取人物关系后的目标实体，例如“辛追的儿子利豨”中的“利豨”。"""
+    normalized = _normalize_lexical_text(query)
+    relation_pattern = r"(?:儿子|女儿|丈夫|妻子|父亲|母亲|墓主人|作者|主人)([\u4e00-\u9fff]{2,4})$"
+    match = re.search(relation_pattern, normalized)
+    return {match.group(1)} if match else set()
+
+
 def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
     """用精确中文实体/关系短语补强 RRF；无匹配时保持原召回顺序。"""
     terms = _query_ngrams(query)
+    focus_terms = _query_focus_terms(query)
     reranked: List[dict] = []
     for index, source in enumerate(docs, 1):
         doc = dict(source)
@@ -332,7 +341,8 @@ def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
         filename = _normalize_lexical_text(str(doc.get("filename") or ""))
         text_score = sum(len(term) ** 2 for term in terms if term in text)
         filename_score = sum(len(term) ** 2 for term in terms if term in filename)
-        doc["local_rerank_score"] = float(text_score + filename_score * 2)
+        focus_score = sum(200 for term in focus_terms if term in text or term in filename)
+        doc["local_rerank_score"] = float(text_score + filename_score * 2 + focus_score)
         doc.setdefault("rrf_rank", index)
         reranked.append(doc)
     return sorted(
