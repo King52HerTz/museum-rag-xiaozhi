@@ -75,6 +75,7 @@ class RagTraceFields(StrictSchema):
 
     rerank_enabled: Optional[bool] = None
     rerank_applied: Optional[bool] = None
+    rerank_backend: Optional[str] = None
     rerank_model: Optional[str] = None
     rerank_endpoint: Optional[str] = None
     rerank_error: Optional[str] = None
@@ -82,10 +83,12 @@ class RagTraceFields(StrictSchema):
     rerank_retryable: Optional[bool] = None
     rerank_timeout_seconds: Optional[float] = None
     rerank_min_score: Optional[float] = None
+    rerank_semantic_weight: Optional[float] = None
     local_rerank_enabled: Optional[bool] = None
     local_rerank_applied: Optional[bool] = None
     retrieval_max_chunks_per_document: Optional[int] = None
     document_diversity_applied: Optional[bool] = None
+    retrieval_boilerplate_stripped: Optional[bool] = None
     post_rerank_count: Optional[int] = None
     post_threshold_count: Optional[int] = None
     retrieval_empty: Optional[bool] = None

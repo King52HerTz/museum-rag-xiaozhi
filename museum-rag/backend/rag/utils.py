@@ -2,11 +2,14 @@ from collections import defaultdict
 from typing import List, Tuple, Dict, Any, Literal, Optional
 import os
 import json
+import math
 import re
+import threading
 import requests
 
 from backend.indexing.milvus_client import get_milvus_store
 from backend.indexing.embedding import embedding_service as _embedding_service
+from backend.indexing.document_loader import strip_indexing_boilerplate
 from backend.indexing.parent_chunk_store import ParentChunkStore
 from backend.infra.provider_errors import classify_provider_error
 from langchain.chat_models import init_chat_model
@@ -35,7 +38,12 @@ BASE_URL = os.getenv("BASE_URL")
 RERANK_MODEL = _optional_env("RERANK_MODEL")
 RERANK_BINDING_HOST = _optional_env("RERANK_BINDING_HOST")
 RERANK_API_KEY = _optional_env("RERANK_API_KEY")
-RERANK_ENABLED = bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST)
+LOCAL_CROSS_ENCODER_MODEL = _optional_env("LOCAL_CROSS_ENCODER_MODEL")
+LOCAL_CROSS_ENCODER_DEVICE = os.getenv("LOCAL_CROSS_ENCODER_DEVICE", "cpu").strip() or "cpu"
+LOCAL_CROSS_ENCODER_OFFLINE = os.getenv("LOCAL_CROSS_ENCODER_OFFLINE", "false").lower() == "true"
+EXTERNAL_RERANK_ENABLED = bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST)
+LOCAL_CROSS_ENCODER_ENABLED = bool(LOCAL_CROSS_ENCODER_MODEL)
+RERANK_ENABLED = EXTERNAL_RERANK_ENABLED or LOCAL_CROSS_ENCODER_ENABLED
 try:
     RERANK_TIMEOUT_SECONDS = max(float(os.getenv("RERANK_TIMEOUT_SECONDS", "5")), 0.1)
 except ValueError:
@@ -59,6 +67,9 @@ LOCAL_LEXICAL_RERANK_ENABLED = os.getenv("LOCAL_LEXICAL_RERANK_ENABLED", "true")
 RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = _read_positive_int_env(
     "RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT", 2
 )
+RETRIEVAL_STRIP_BOILERPLATE = os.getenv("RETRIEVAL_STRIP_BOILERPLATE", "true").lower() != "false"
+LOCAL_CROSS_ENCODER_BATCH_SIZE = _read_positive_int_env("LOCAL_CROSS_ENCODER_BATCH_SIZE", 4)
+LOCAL_CROSS_ENCODER_MAX_LENGTH = _read_positive_int_env("LOCAL_CROSS_ENCODER_MAX_LENGTH", 512)
 
 
 def _read_float_env(name: str, default: float) -> float:
@@ -69,6 +80,8 @@ def _read_float_env(name: str, default: float) -> float:
 
 
 RERANK_MIN_SCORE = _read_float_env("RERANK_MIN_SCORE", 0.0)
+LOCAL_CROSS_ENCODER_WEIGHT = min(max(_read_float_env("LOCAL_CROSS_ENCODER_WEIGHT", 0.4), 0.0), 1.0)
+LOCAL_CROSS_ENCODER_RRF_K = _read_positive_int_env("LOCAL_CROSS_ENCODER_RRF_K", 60)
 
 RETRIEVAL_TRACE_FIELDS = (
     "retrieval_pipeline",
@@ -92,6 +105,7 @@ RETRIEVAL_TRACE_FIELDS = (
     "auto_merge_steps",
     "rerank_enabled",
     "rerank_applied",
+    "rerank_backend",
     "rerank_model",
     "rerank_endpoint",
     "rerank_error",
@@ -99,10 +113,12 @@ RETRIEVAL_TRACE_FIELDS = (
     "rerank_retryable",
     "rerank_timeout_seconds",
     "rerank_min_score",
+    "rerank_semantic_weight",
     "local_rerank_enabled",
     "local_rerank_applied",
     "retrieval_max_chunks_per_document",
     "document_diversity_applied",
+    "retrieval_boilerplate_stripped",
     "post_rerank_count",
     "post_threshold_count",
     "retrieval_empty",
@@ -118,6 +134,8 @@ _parent_chunk_store = ParentChunkStore()
 
 _rewrite_model = None
 _stepback_model = None
+_local_cross_encoder = None
+_local_cross_encoder_lock = threading.Lock()
 
 
 def resolve_candidate_k(top_k: int) -> Tuple[int, Dict[str, Any]]:
@@ -382,6 +400,77 @@ def _prefer_document_diversity(docs: List[dict], top_k: int) -> Tuple[List[dict]
     return result, changed
 
 
+def _clean_retrieval_context(docs: List[dict]) -> Tuple[List[dict], bool]:
+    if not RETRIEVAL_STRIP_BOILERPLATE:
+        return docs, False
+    cleaned: List[dict] = []
+    changed = False
+    for source in docs:
+        doc = dict(source)
+        original = str(doc.get("text") or "")
+        normalized = strip_indexing_boilerplate(original)
+        if normalized != original.strip():
+            doc["text"] = normalized
+            changed = True
+        cleaned.append(doc)
+    return cleaned, changed
+
+
+def _get_local_cross_encoder():
+    global _local_cross_encoder
+    if not LOCAL_CROSS_ENCODER_MODEL:
+        return None
+    if _local_cross_encoder is None:
+        with _local_cross_encoder_lock:
+            if _local_cross_encoder is None:
+                from sentence_transformers import CrossEncoder
+
+                _local_cross_encoder = CrossEncoder(
+                    LOCAL_CROSS_ENCODER_MODEL,
+                    device=LOCAL_CROSS_ENCODER_DEVICE,
+                    max_length=LOCAL_CROSS_ENCODER_MAX_LENGTH,
+                    local_files_only=LOCAL_CROSS_ENCODER_OFFLINE,
+                )
+    return _local_cross_encoder
+
+
+def _normalize_cross_encoder_score(value: Any) -> float:
+    if hasattr(value, "item"):
+        value = value.item()
+    score = float(value)
+    if 0.0 <= score <= 1.0:
+        return score
+    score = max(min(score, 30.0), -30.0)
+    return 1.0 / (1.0 + math.exp(-score))
+
+
+def _rerank_with_local_cross_encoder(query: str, docs: List[dict]) -> List[dict]:
+    model = _get_local_cross_encoder()
+    if model is None:
+        raise RuntimeError("local cross encoder is not configured")
+    pairs = [(query, str(doc.get("text") or "")) for doc in docs]
+    scores = model.predict(
+        pairs,
+        batch_size=LOCAL_CROSS_ENCODER_BATCH_SIZE,
+        show_progress_bar=False,
+    )
+    if len(scores) != len(docs):
+        raise ValueError("local cross encoder returned an invalid score count")
+    reranked = []
+    for source, score in zip(docs, scores):
+        doc = dict(source)
+        doc["rerank_score"] = _normalize_cross_encoder_score(score)
+        reranked.append(doc)
+    semantic_ranked = _sort_by_rank_score(reranked)
+    for semantic_rank, doc in enumerate(semantic_ranked, 1):
+        rrf_rank = max(int(doc.get("rrf_rank") or semantic_rank), 1)
+        doc["rerank_fused_score"] = (
+            LOCAL_CROSS_ENCODER_WEIGHT / (LOCAL_CROSS_ENCODER_RRF_K + semantic_rank)
+            + (1.0 - LOCAL_CROSS_ENCODER_WEIGHT) / (LOCAL_CROSS_ENCODER_RRF_K + rrf_rank)
+        )
+    return sorted(semantic_ranked, key=lambda item: item["rerank_fused_score"], reverse=True)
+
+
 def dedupe_documents(docs: List[dict]) -> List[dict]:
     """按 chunk_id 去重；重复项保留更高 rank 分（rerank_score 优先）。"""
     by_key: Dict[str, dict] = {}
@@ -399,15 +488,26 @@ def dedupe_documents(docs: List[dict]) -> List[dict]:
 
 def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[dict], Dict[str, Any]]:
     docs_with_rank = [{**doc, "rrf_rank": i} for i, doc in enumerate(docs, 1)]
+    external_enabled = bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST)
+    local_cross_encoder_enabled = bool(LOCAL_CROSS_ENCODER_MODEL)
     meta: Dict[str, Any] = {
-        "rerank_enabled": RERANK_ENABLED,
+        "rerank_enabled": external_enabled or local_cross_encoder_enabled,
         "rerank_applied": False,
-        "rerank_model": RERANK_MODEL,
-        "rerank_endpoint": _get_rerank_endpoint(),
+        "rerank_backend": (
+            "external" if external_enabled
+            else "local_cross_encoder" if local_cross_encoder_enabled
+            else "local_lexical" if LOCAL_LEXICAL_RERANK_ENABLED
+            else "rrf"
+        ),
+        "rerank_model": RERANK_MODEL if external_enabled else LOCAL_CROSS_ENCODER_MODEL,
+        "rerank_endpoint": _get_rerank_endpoint() if external_enabled else "",
         "rerank_error": None,
         "rerank_error_code": None,
         "rerank_retryable": None,
         "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
+        "rerank_semantic_weight": (
+            LOCAL_CROSS_ENCODER_WEIGHT if local_cross_encoder_enabled and not external_enabled else None
+        ),
         "candidate_count": len(docs_with_rank),
         "local_rerank_enabled": LOCAL_LEXICAL_RERANK_ENABLED,
         "local_rerank_applied": False,
@@ -426,7 +526,20 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
         meta["document_diversity_applied"] = changed
         return diversified
 
-    if not meta["rerank_enabled"]:
+    if local_cross_encoder_enabled and not external_enabled:
+        try:
+            meta["rerank_applied"] = True
+            reranked = _rerank_with_local_cross_encoder(query, docs_with_rank)
+            diversified, changed = _prefer_document_diversity(reranked, top_k)
+            meta["document_diversity_applied"] = changed
+            return diversified, meta
+        except Exception:
+            meta["rerank_error"] = "LOCAL_RERANK_UNAVAILABLE"
+            meta["rerank_error_code"] = "LOCAL_RERANK_UNAVAILABLE"
+            meta["rerank_retryable"] = False
+            return fallback(), meta
+
+    if not external_enabled:
         return fallback(), meta
 
     payload = {
@@ -661,7 +774,8 @@ def _finalize_retrieval(
     candidates, merge_meta = _auto_merge_candidates(retrieved)
     reranked_docs, rerank_meta = _rerank_documents(query=query, docs=candidates, top_k=top_k)
     post_rerank_count = len(reranked_docs)
-    final_docs = [d for d in reranked_docs if _meets_rerank_min_score(d)]
+    threshold_docs = [d for d in reranked_docs if _meets_rerank_min_score(d)]
+    final_docs, boilerplate_stripped = _clean_retrieval_context(threshold_docs)
     meta = {
         **rerank_meta,
         **merge_meta,
@@ -675,6 +789,7 @@ def _finalize_retrieval(
         "rerank_min_score": RERANK_MIN_SCORE,
         "post_rerank_count": post_rerank_count,
         "post_threshold_count": len(final_docs),
+        "retrieval_boilerplate_stripped": boilerplate_stripped,
         "retrieval_empty": len(final_docs) == 0,
     }
     return {"docs": final_docs, "meta": meta}

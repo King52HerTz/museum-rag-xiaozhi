@@ -236,6 +236,7 @@ class RagCoreCompatibilityTests(unittest.TestCase):
             {
                 "local_rerank_enabled": True,
                 "local_rerank_applied": True,
+                "rerank_backend": "local_cross_encoder",
                 "retrieval_max_chunks_per_document": 2,
                 "document_diversity_applied": True,
             }
@@ -244,6 +245,65 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertTrue(trace["local_rerank_applied"])
         self.assertTrue(trace["document_diversity_applied"])
         self.assertEqual(2, trace["retrieval_max_chunks_per_document"])
+        self.assertEqual("local_cross_encoder", trace["rerank_backend"])
+
+    def test_local_cross_encoder_reranks_and_records_backend(self):
+        class FakeCrossEncoder:
+            def predict(self, pairs, **_kwargs):
+                self.pairs = pairs
+                return [-2.0, 3.0]
+
+        docs = [
+            {"filename": "A.docx", "text": "泛化资料", "score": 0.9},
+            {"filename": "B.docx", "text": "精确资料", "score": 0.5},
+        ]
+        with (
+            patch.object(utils, "RERANK_MODEL", None),
+            patch.object(utils, "RERANK_API_KEY", None),
+            patch.object(utils, "RERANK_BINDING_HOST", None),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_MODEL", "local-test-model"),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_WEIGHT", 0.8),
+            patch.object(utils, "_get_local_cross_encoder", return_value=FakeCrossEncoder()),
+        ):
+            ranked, meta = utils._rerank_documents("精确问题", docs, top_k=2)
+
+        self.assertEqual("B.docx", ranked[0]["filename"])
+        self.assertEqual("local_cross_encoder", meta["rerank_backend"])
+        self.assertTrue(meta["rerank_applied"])
+        self.assertIsNone(meta["rerank_error"])
+
+    def test_cross_encoder_fusion_preserves_strong_rrf_evidence(self):
+        class FakeCrossEncoder:
+            def predict(self, _pairs, **_kwargs):
+                return [0.1, 0.9]
+
+        docs = [
+            {"filename": "exact-bm25.docx", "text": "四个单元", "score": 0.9, "rrf_rank": 1},
+            {"filename": "semantic.docx", "text": "展览内容", "score": 0.8, "rrf_rank": 2},
+        ]
+        with (
+            patch.object(utils, "LOCAL_CROSS_ENCODER_WEIGHT", 0.2),
+            patch.object(utils, "_get_local_cross_encoder", return_value=FakeCrossEncoder()),
+        ):
+            ranked = utils._rerank_with_local_cross_encoder("哪四个单元", docs)
+
+        self.assertEqual("exact-bm25.docx", ranked[0]["filename"])
+        self.assertIn("rerank_fused_score", ranked[0])
+
+    def test_local_cross_encoder_failure_falls_back_without_details(self):
+        docs = [{"filename": "A.docx", "text": "资料", "score": 0.9}]
+        with (
+            patch.object(utils, "RERANK_MODEL", None),
+            patch.object(utils, "RERANK_API_KEY", None),
+            patch.object(utils, "RERANK_BINDING_HOST", None),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_MODEL", "missing-model"),
+            patch.object(utils, "_get_local_cross_encoder", side_effect=RuntimeError("private path")),
+        ):
+            ranked, meta = utils._rerank_documents("问题", docs, top_k=1)
+
+        self.assertEqual("A.docx", ranked[0]["filename"])
+        self.assertEqual("LOCAL_RERANK_UNAVAILABLE", meta["rerank_error_code"])
+        self.assertNotIn("private path", str(meta))
 
     def test_missing_external_reranker_uses_local_fallback(self):
         docs = [
@@ -253,6 +313,7 @@ class RagCoreCompatibilityTests(unittest.TestCase):
 
         with (
             patch.object(utils, "RERANK_ENABLED", False),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_MODEL", None),
             patch.object(utils, "LOCAL_LEXICAL_RERANK_ENABLED", True),
         ):
             ranked, meta = utils._rerank_documents("辛追的儿子利豨", docs, top_k=2)

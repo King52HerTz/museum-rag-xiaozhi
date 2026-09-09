@@ -40,14 +40,17 @@ export interface RagTrace {
   auto_merge_steps?: number;
   rerank_enabled?: boolean | null;
   rerank_applied?: boolean | null;
+  rerank_backend?: string;
   rerank_model?: string;
   rerank_error?: string;
   rerank_error_code?: string;
   rerank_retryable?: boolean | null;
+  rerank_semantic_weight?: number | null;
   local_rerank_enabled?: boolean | null;
   local_rerank_applied?: boolean | null;
   retrieval_max_chunks_per_document?: number;
   document_diversity_applied?: boolean | null;
+  retrieval_boilerplate_stripped?: boolean | null;
   coverage_gap_codes?: string[];
   coverage_gap_questions?: string[];
   expansion_type?: string;

@@ -79,8 +79,14 @@
         <div v-if="msg.ragTrace.rerank_applied !== null && msg.ragTrace.rerank_applied !== undefined" class="trace-line">
           Rerank已执行：{{ msg.ragTrace.rerank_applied ? '是' : '否' }}
         </div>
+        <div v-if="msg.ragTrace.rerank_backend" class="trace-line">
+          Rerank后端：{{ msg.ragTrace.rerank_backend }}
+        </div>
         <div v-if="msg.ragTrace.rerank_model" class="trace-line">
           Rerank模型：{{ msg.ragTrace.rerank_model }}
+        </div>
+        <div v-if="msg.ragTrace.rerank_semantic_weight !== null && msg.ragTrace.rerank_semantic_weight !== undefined" class="trace-line">
+          语义精排权重：{{ msg.ragTrace.rerank_semantic_weight }}
         </div>
         <div v-if="msg.ragTrace.rerank_error" class="trace-line">
           Rerank状态：{{ msg.ragTrace.rerank_error }}
@@ -102,6 +108,9 @@
         </div>
         <div v-if="msg.ragTrace.document_diversity_applied !== null && msg.ragTrace.document_diversity_applied !== undefined" class="trace-line">
           文档多样化已执行：{{ msg.ragTrace.document_diversity_applied ? '是' : '否' }}
+        </div>
+        <div v-if="msg.ragTrace.retrieval_boilerplate_stripped !== null && msg.ragTrace.retrieval_boilerplate_stripped !== undefined" class="trace-line">
+          回答上下文去噪：{{ msg.ragTrace.retrieval_boilerplate_stripped ? '是' : '否' }}
         </div>
         <div v-if="msg.ragTrace.expansion_type" class="trace-line">
           扩展策略：{{ msg.ragTrace.expansion_type }}
