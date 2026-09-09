@@ -217,6 +217,21 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual(["常见问答.docx", "漆器与髹漆工艺.docx"], [d["filename"] for d in reranked])
         self.assertEqual(set(), utils._query_focus_terms("辛追夫人的儿子是谁？"))
 
+    def test_focus_protection_runs_after_semantic_ranking(self):
+        docs = [
+            {"filename": "辛追遗体.docx", "text": "辛追遗体保护"},
+            {"filename": "利苍一家.docx", "text": "辛追和利豨属于利苍一家"},
+            {"filename": "数字研究.docx", "text": "辛追数字人"},
+        ]
+
+        ranked = utils._promote_focus_matches("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertEqual("利苍一家.docx", ranked[0]["filename"])
+        self.assertEqual(
+            [item["filename"] for item in docs],
+            [item["filename"] for item in utils._promote_focus_matches("辛追遗体如何保护", docs)],
+        )
+
     def test_document_diversity_prefers_other_sources_before_refill(self):
         docs = [
             {"filename": "A.docx", "text": "A1"},

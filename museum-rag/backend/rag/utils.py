@@ -377,6 +377,24 @@ def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
     )
 
 
+def _promote_focus_matches(query: str, docs: List[dict]) -> List[dict]:
+    focus_terms = _query_focus_terms(query)
+    if not focus_terms:
+        return docs
+
+    def has_focus(doc: dict) -> bool:
+        content = _normalize_lexical_text(
+            f"{doc.get('filename') or ''} {doc.get('text') or ''}"
+        )
+        return any(term in content for term in focus_terms)
+
+    return [doc for _, doc in sorted(
+        enumerate(docs),
+        key=lambda item: (has_focus(item[1]), -item[0]),
+        reverse=True,
+    )]
+
+
 def _prefer_document_diversity(docs: List[dict], top_k: int) -> Tuple[List[dict], bool]:
     """优先限制单文档片段数；唯一文档不足时回填，确保不损失可用结果。"""
     selected: List[dict] = []
@@ -530,6 +548,7 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
         try:
             meta["rerank_applied"] = True
             reranked = _rerank_with_local_cross_encoder(query, docs_with_rank)
+            reranked = _promote_focus_matches(query, reranked)
             diversified, changed = _prefer_document_diversity(reranked, top_k)
             meta["document_diversity_applied"] = changed
             return diversified, meta
