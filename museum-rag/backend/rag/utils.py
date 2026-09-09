@@ -327,7 +327,9 @@ def _query_focus_terms(query: str) -> set[str]:
     normalized = _normalize_lexical_text(query)
     relation_pattern = r"(?:儿子|女儿|丈夫|妻子|父亲|母亲|墓主人|作者|主人)([\u4e00-\u9fff]{2,4})$"
     match = re.search(relation_pattern, normalized)
-    return {match.group(1)} if match else set()
+    if not match or match.group(1) in {"是谁", "叫什么", "怎么样", "是什么"}:
+        return set()
+    return {match.group(1)}
 
 
 def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
@@ -341,14 +343,16 @@ def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
         filename = _normalize_lexical_text(str(doc.get("filename") or ""))
         text_score = sum(len(term) ** 2 for term in terms if term in text)
         filename_score = sum(len(term) ** 2 for term in terms if term in filename)
-        focus_score = sum(200 for term in focus_terms if term in text or term in filename)
+        focus_matches = sum(1 for term in focus_terms if term in text or term in filename)
+        focus_score = focus_matches * 200
         doc["local_rerank_score"] = float(text_score + filename_score * 2 + focus_score)
+        doc["local_focus_match"] = focus_matches > 0
         doc.setdefault("rrf_rank", index)
         reranked.append(doc)
     return sorted(
         reranked,
         key=lambda item: (
-            item.get("local_rerank_score", 0.0),
+            bool(item.get("local_focus_match")),
             -int(item.get("rrf_rank") or 0),
         ),
         reverse=True,

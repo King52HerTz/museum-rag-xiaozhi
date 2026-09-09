@@ -206,6 +206,17 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("03_利苍一家与西汉长沙国背景.docx", reranked[0]["filename"])
         self.assertEqual({"利豨"}, utils._query_focus_terms("辛追夫人的儿子利豨"))
 
+    def test_general_question_keeps_rrf_order(self):
+        docs = [
+            {"filename": "常见问答.docx", "text": "马王堆出土文物概览。", "score": 0.9},
+            {"filename": "漆器与髹漆工艺.docx", "text": "马王堆出土七百余件漆器。", "score": 0.8},
+        ]
+
+        reranked = utils._local_lexical_rerank("马王堆出土了多少件漆器？", docs)
+
+        self.assertEqual(["常见问答.docx", "漆器与髹漆工艺.docx"], [d["filename"] for d in reranked])
+        self.assertEqual(set(), utils._query_focus_terms("辛追夫人的儿子是谁？"))
+
     def test_document_diversity_prefers_other_sources_before_refill(self):
         docs = [
             {"filename": "A.docx", "text": "A1"},
