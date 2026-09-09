@@ -16,6 +16,7 @@ from backend.rag.utils import (
     rewrite_query_once,
     dedupe_documents,
     retrieval_trace_fields,
+    expand_relation_query,
 )
 from backend.rag.structured_output import with_structured_output
 from backend.rag.outcomes import outcome_for_status
@@ -159,6 +160,7 @@ class RAGState(TypedDict):
     rewritten_query: Optional[str]
     step_back_question: Optional[str]
     hyde_document: Optional[str]
+    relation_candidates: Optional[List[str]]
     rag_trace: Optional[dict]
     # 复杂度路由新增字段
     complexity: Optional[str]
@@ -400,18 +402,31 @@ def _resolve_route(grade: EvidenceGrade, state: RAGState) -> str:
     rewrite_count = int(state.get("rewrite_count") or 0)
     is_sub_agent = bool(state.get("is_sub_agent"))
     route = grade.route
+    relation_retry_available = bool(expand_relation_query(state.get("question") or ""))
 
     if not docs:
         if state.get("retrieval_degraded_code"):
             return "insufficient_evidence"
+        if relation_retry_available and rewrite_count < 1 and not is_sub_agent:
+            return "rewrite"
         return "no_knowledge"
     if grade.relevance == "none":
+        if relation_retry_available and rewrite_count < 1 and not is_sub_agent:
+            return "rewrite"
         return "no_knowledge"
 
     if grade.ambiguity == "missing_slot":
         return "clarify"
     if grade.ambiguity == "multiple_candidates":
         return "scope_select"
+
+    if (
+        relation_retry_available
+        and rewrite_count < 1
+        and not is_sub_agent
+        and grade.answerability == "none"
+    ):
+        return "rewrite"
 
     answer_is_supported = grade.relevance == "strong" and grade.answerability == "sufficient"
     if route == "answer" and answer_is_supported:
@@ -427,6 +442,8 @@ def _resolve_route(grade: EvidenceGrade, state: RAGState) -> str:
         return "rewrite"
 
     if route == "rewrite" and rewrite_count >= 1:
+        if relation_retry_available and grade.answerability == "partial":
+            return "answer"
         if grade.answerability == "partial":
             return "clarify"
         return "no_knowledge"
@@ -434,6 +451,8 @@ def _resolve_route(grade: EvidenceGrade, state: RAGState) -> str:
     if grade.answerability == "partial":
         if rewrite_count < 1:
             return "rewrite"
+        if relation_retry_available:
+            return "answer"
         return "clarify"
 
     if answer_is_supported:
@@ -566,19 +585,24 @@ def rewrite_question_node(state: RAGState) -> RAGState:
         }
 
     _emit(state, "🧠", "选择 Step-back / HyDE 重写方式")
-    rewrite = rewrite_query_once(question)
+    rewrite = rewrite_query_once(question, state.get("docs") or [])
     rewrite_method = (rewrite.get("rewrite_method") or "").strip()
     step_back_question = (rewrite.get("step_back_question") or "").strip()
     hyde_document = (rewrite.get("hyde_document") or "").strip()
     rewritten_query = (rewrite.get("rewritten_query") or "").strip()
-    if rewrite_method not in ("step_back", "hyde") or not rewritten_query:
+    relation_candidates = list(rewrite.get("relation_candidates") or [])
+    if rewrite_method not in ("relation_expansion", "step_back", "hyde") or not rewritten_query:
         raise ValueError("Query rewriting returned an incomplete result")
     if rewrite_method == "step_back" and (not step_back_question or hyde_document):
         raise ValueError("Step-back rewriting returned an invalid result")
     if rewrite_method == "hyde" and (not hyde_document or step_back_question):
         raise ValueError("HyDE rewriting returned an invalid result")
 
-    method_label = "Step-back" if rewrite_method == "step_back" else "HyDE"
+    method_label = {
+        "relation_expansion": "关系意图",
+        "step_back": "Step-back",
+        "hyde": "HyDE",
+    }[rewrite_method]
     _emit(state, "✅", f"已选择 {method_label} 重写", "本轮只执行这一种重写检索")
 
     rag_trace = state.get("rag_trace", {}) or {}
@@ -591,12 +615,15 @@ def rewrite_question_node(state: RAGState) -> RAGState:
         rag_trace["step_back_question"] = step_back_question
     if hyde_document:
         rag_trace["hyde_document"] = hyde_document
+    if relation_candidates:
+        rag_trace["relation_candidates"] = relation_candidates
 
     return {
         "rewrite_method": rewrite_method,
         "rewritten_query": rewritten_query,
         "step_back_question": step_back_question,
         "hyde_document": hyde_document,
+        "relation_candidates": relation_candidates,
         "rewrite_count": rewrite_count + 1,
         "rag_trace": rag_trace,
     }
@@ -604,12 +631,16 @@ def rewrite_question_node(state: RAGState) -> RAGState:
 
 def retrieve_rewritten(state: RAGState) -> RAGState:
     rewrite_method = (state.get("rewrite_method") or "").strip()
-    if rewrite_method not in ("step_back", "hyde"):
+    if rewrite_method not in ("relation_expansion", "step_back", "hyde"):
         raise ValueError("rewrite_method is required for rewritten retrieval")
     rewritten_query = (state.get("rewritten_query") or "").strip()
     if not rewritten_query:
         raise ValueError("rewritten_query is required for rewritten retrieval")
-    method_label = "Step-back" if rewrite_method == "step_back" else "HyDE"
+    method_label = {
+        "relation_expansion": "关系意图",
+        "step_back": "Step-back",
+        "hyde": "HyDE",
+    }[rewrite_method]
     _emit(state, "🔄", f"使用 {method_label} 查询重新检索...")
     retrieved = retrieve_documents(rewritten_query, top_k=RETRIEVAL_TOP_K)
     results = retrieved.get("docs", [])

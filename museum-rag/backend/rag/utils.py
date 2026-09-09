@@ -118,6 +118,8 @@ RETRIEVAL_TRACE_FIELDS = (
     "local_rerank_applied",
     "retrieval_max_chunks_per_document",
     "document_diversity_applied",
+    "query_intent",
+    "intent_rerank_applied",
     "retrieval_boilerplate_stripped",
     "post_rerank_count",
     "post_threshold_count",
@@ -350,6 +352,119 @@ def _query_focus_terms(query: str) -> set[str]:
     return {match.group(1)}
 
 
+_PERSON_RELATIONS = (
+    "儿子",
+    "女儿",
+    "丈夫",
+    "妻子",
+    "父亲",
+    "母亲",
+    "父母",
+    "子女",
+    "后代",
+    "家人",
+    "墓主人",
+)
+_PERSON_PROFILE_CUES = ("介绍", "生平", "经历", "身份", "是谁", "叫什么", "人物")
+_PERSON_PROFILE_FILENAME_CUES = ("一家", "家族", "人物", "生平", "背景", "墓主人")
+_PERSON_PROFILE_TEXT_CUES = (
+    "儿子",
+    "女儿",
+    "丈夫",
+    "妻子",
+    "父亲",
+    "母亲",
+    "一家",
+    "家族",
+    "继承",
+    "爵位",
+    "墓主人",
+    "身份",
+)
+
+
+def detect_query_intent(query: str) -> str:
+    """识别少量高价值检索意图；未知意图保持 general，不猜测具体实体。"""
+    normalized = _normalize_lexical_text(query)
+    has_relation = any(term in normalized for term in _PERSON_RELATIONS)
+    has_profile_cue = any(term in normalized for term in _PERSON_PROFILE_CUES)
+    relation_is_question_target = any(normalized.endswith(term) for term in _PERSON_RELATIONS)
+    if has_relation and (has_profile_cue or relation_is_question_target):
+        return "person_profile"
+    return "general"
+
+
+_RELATION_ENTITY_STOPWORDS = {
+    "家庭",
+    "家族",
+    "人物",
+    "身份",
+    "姓名",
+    "一家三口",
+    "墓主人",
+    "官方结论",
+    "官方来源",
+}
+
+
+def extract_relation_candidates(query: str, docs: Optional[List[dict]] = None) -> List[str]:
+    """从初次证据的引号实体中提取候选名，仅用于二次检索，不当作事实。"""
+    normalized_query = _normalize_lexical_text(query)
+    candidates: List[str] = []
+    # 意图排序后的首个资料最接近问题；限制来源，避免后续泛化片段注入无关名词。
+    for doc in (docs or [])[:1]:
+        text = str(doc.get("text") or "")
+        for candidate in re.findall(r"[“\"]([\u4e00-\u9fff]{2,4})[”\"]", text):
+            if candidate in _RELATION_ENTITY_STOPWORDS or candidate in _PERSON_RELATIONS:
+                continue
+            if _normalize_lexical_text(candidate) in normalized_query:
+                continue
+            if candidate not in candidates:
+                candidates.append(candidate)
+            if len(candidates) >= 3:
+                return candidates
+    return candidates
+
+
+def expand_relation_query(query: str, docs: Optional[List[dict]] = None) -> Optional[str]:
+    """为关系型人物问题生成确定性检索扩展，不依赖模型猜出目标姓名。"""
+    if detect_query_intent(query) != "person_profile":
+        return None
+    normalized = query.strip()
+    if not normalized:
+        return None
+    candidates = extract_relation_candidates(query, docs)
+    candidate_text = f" 候选实体 {' '.join(candidates)}" if candidates else ""
+    return f"{normalized}\n人物姓名 身份 家庭关系 生平 经历 墓葬{candidate_text}"
+
+
+def _person_profile_score(doc: dict) -> int:
+    filename = _normalize_lexical_text(str(doc.get("filename") or ""))
+    text = _normalize_lexical_text(str(doc.get("text") or ""))
+    filename_score = sum(3 for cue in _PERSON_PROFILE_FILENAME_CUES if cue in filename)
+    text_score = sum(1 for cue in _PERSON_PROFILE_TEXT_CUES if cue in text)
+    return filename_score + min(text_score, 6)
+
+
+def _promote_intent_matches(query: str, docs: List[dict]) -> Tuple[List[dict], bool]:
+    """人物介绍优先人物/家庭证据，避免单件器物因重复提名占据首位。"""
+    intent = detect_query_intent(query)
+    if intent != "person_profile":
+        return docs, False
+
+    scored = [(_person_profile_score(doc), index, doc) for index, doc in enumerate(docs)]
+    if not any(score >= 4 for score, _, _ in scored):
+        return docs, False
+    strong = sorted(
+        (item for item in scored if item[0] >= 4),
+        key=lambda item: (item[0], -item[1]),
+        reverse=True,
+    )
+    remaining = [item for item in scored if item[0] < 4]
+    ranked = [doc for _, _, doc in strong + remaining]
+    return ranked, ranked != docs
+
+
 def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
     """用精确中文实体/关系短语补强 RRF；无匹配时保持原召回顺序。"""
     terms = _query_ngrams(query)
@@ -531,6 +646,8 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
         "local_rerank_applied": False,
         "retrieval_max_chunks_per_document": RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT,
         "document_diversity_applied": False,
+        "query_intent": detect_query_intent(query),
+        "intent_rerank_applied": False,
     }
     if not docs_with_rank:
         return [], meta
@@ -540,6 +657,8 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
         if LOCAL_LEXICAL_RERANK_ENABLED:
             ranked = _local_lexical_rerank(query, ranked)
             meta["local_rerank_applied"] = True
+        ranked, intent_changed = _promote_intent_matches(query, ranked)
+        meta["intent_rerank_applied"] = intent_changed
         diversified, changed = _prefer_document_diversity(ranked, top_k)
         meta["document_diversity_applied"] = changed
         return diversified
@@ -549,6 +668,8 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
             meta["rerank_applied"] = True
             reranked = _rerank_with_local_cross_encoder(query, docs_with_rank)
             reranked = _promote_focus_matches(query, reranked)
+            reranked, intent_changed = _promote_intent_matches(query, reranked)
+            meta["intent_rerank_applied"] = intent_changed
             diversified, changed = _prefer_document_diversity(reranked, top_k)
             meta["document_diversity_applied"] = changed
             return diversified, meta
@@ -602,6 +723,8 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
                 reranked.append(doc)
 
         if reranked:
+            reranked, intent_changed = _promote_intent_matches(query, reranked)
+            meta["intent_rerank_applied"] = intent_changed
             diversified, changed = _prefer_document_diversity(reranked, top_k)
             meta["document_diversity_applied"] = changed
             return diversified, meta
@@ -666,8 +789,19 @@ def _get_rewrite_model():
     return _rewrite_model
 
 
-def rewrite_query_once(query: str) -> dict:
+def rewrite_query_once(query: str, candidate_docs: Optional[List[dict]] = None) -> dict:
     """Run one structured query rewrite plan for the upgraded RAG pipeline."""
+    relation_candidates = extract_relation_candidates(query, candidate_docs)
+    relation_expansion = expand_relation_query(query, candidate_docs)
+    if relation_expansion:
+        return {
+            "rewrite_method": "relation_expansion",
+            "rewritten_query": relation_expansion,
+            "step_back_question": "",
+            "hyde_document": "",
+            "relation_candidates": relation_candidates,
+        }
+
     model = _get_rewrite_model()
     if not model:
         raise RuntimeError("FAST_MODEL is required for query rewriting")

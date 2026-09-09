@@ -157,6 +157,26 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("", result["step_back_question"])
         self.assertIn("假设性答案文档", result["rewritten_query"])
 
+    def test_relationship_question_uses_deterministic_query_expansion(self):
+        result = utils.rewrite_query_once(
+            "张先生的女儿介绍一下",
+            [
+                {"text": "一家人包括张先生、王女士和“小雨”。"},
+                {"text": "无关资料中的“后续计划”和“宣传活动”。"},
+            ],
+        )
+
+        self.assertEqual("relation_expansion", result["rewrite_method"])
+        self.assertIn("张先生的女儿介绍一下", result["rewritten_query"])
+        self.assertIn("人物姓名 身份 家庭关系", result["rewritten_query"])
+        self.assertIn("候选实体 小雨", result["rewritten_query"])
+        self.assertEqual(["小雨"], result["relation_candidates"])
+        self.assertEqual("person_profile", utils.detect_query_intent("张先生的女儿介绍一下"))
+        self.assertEqual("person_profile", utils.detect_query_intent("张先生的女儿？"))
+
+    def test_unrelated_question_does_not_use_relation_expansion(self):
+        self.assertIsNone(utils.expand_relation_query("马王堆出土了多少件漆器？"))
+
     def test_rerank_error_fields_survive_trace_normalization(self):
         trace = normalize_rag_trace(
             {
@@ -231,6 +251,118 @@ class RagCoreCompatibilityTests(unittest.TestCase):
             [item["filename"] for item in docs],
             [item["filename"] for item in utils._promote_focus_matches("辛追遗体如何保护", docs)],
         )
+
+    def test_person_profile_intent_prefers_family_evidence_over_object_mentions(self):
+        docs = [
+            {
+                "filename": "竽与古代音乐器物.docx",
+                "text": "利豨墓出土了一件结构完整的实用竽。",
+            },
+            {
+                "filename": "利苍一家与西汉长沙国背景.docx",
+                "text": "辛追夫人与利苍的儿子利豨继承爵位，是三号墓墓主人。",
+            },
+        ]
+
+        ranked, changed = utils._promote_intent_matches("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertTrue(changed)
+        self.assertEqual("利苍一家与西汉长沙国背景.docx", ranked[0]["filename"])
+
+    def test_relation_question_retries_once_after_empty_retrieval(self):
+        docs = [{"filename": "人物关系.docx", "page_number": 1, "text": "某人的女儿名叫小雨。"}]
+
+        class FakeGrader:
+            def with_structured_output(self, _schema, **_kwargs):
+                return self
+
+            def invoke(self, _messages):
+                return pipeline.EvidenceGrade(
+                    relevance="strong",
+                    answerability="sufficient",
+                    ambiguity="none",
+                    route="answer",
+                    confidence=0.9,
+                )
+
+        retrievals = [
+            {"docs": [], "meta": {}},
+            {"docs": docs, "meta": {}},
+        ]
+        with (
+            patch.object(pipeline, "retrieve_documents", side_effect=retrievals) as retrieve,
+            patch.object(pipeline, "_get_grader_model", return_value=FakeGrader()),
+        ):
+            result = pipeline.run_rag_graph("介绍一下某人的女儿")
+
+        self.assertEqual("answerable", result["retrieval_status"])
+        self.assertEqual(2, retrieve.call_count)
+        self.assertEqual("relation_expansion", result["rag_trace"]["rewrite_method"])
+        self.assertIn("人物姓名 身份 家庭关系", retrieve.call_args_list[1].args[0])
+
+    def test_relation_question_retries_when_initial_chunks_cannot_answer(self):
+        weak_docs = [{"filename": "遗体保护.docx", "page_number": 1, "text": "墓主人遗体保护。"}]
+        useful_docs = [{"filename": "人物关系.docx", "page_number": 1, "text": "某人的女儿名叫小雨。"}]
+
+        class SequencedGrader:
+            def __init__(self):
+                self.calls = 0
+
+            def with_structured_output(self, _schema, **_kwargs):
+                return self
+
+            def invoke(self, _messages):
+                self.calls += 1
+                if self.calls == 1:
+                    return pipeline.EvidenceGrade(
+                        relevance="weak",
+                        answerability="none",
+                        ambiguity="none",
+                        route="no_knowledge",
+                        confidence=0.9,
+                    )
+                return pipeline.EvidenceGrade(
+                    relevance="strong",
+                    answerability="sufficient",
+                    ambiguity="none",
+                    route="answer",
+                    confidence=0.9,
+                )
+
+        with (
+            patch.object(
+                pipeline,
+                "retrieve_documents",
+                side_effect=[{"docs": weak_docs, "meta": {}}, {"docs": useful_docs, "meta": {}}],
+            ) as retrieve,
+            patch.object(pipeline, "_get_grader_model", return_value=SequencedGrader()),
+        ):
+            result = pipeline.run_rag_graph("介绍一下某人的女儿")
+
+        self.assertEqual("answerable", result["retrieval_status"])
+        self.assertEqual(2, retrieve.call_count)
+        self.assertEqual("relation_expansion", result["rag_trace"]["rewrite_method"])
+
+    def test_relation_question_returns_partial_evidence_after_retry(self):
+        grade = pipeline.EvidenceGrade(
+            relevance="weak",
+            answerability="partial",
+            ambiguity="none",
+            route="rewrite",
+            confidence=0.7,
+        )
+        route = pipeline._resolve_route(
+            grade,
+            {
+                "question": "介绍一下某人的女儿",
+                "docs": [{"filename": "人物关系.docx", "text": "一家三口相关资料"}],
+                "rewrite_count": 1,
+                "is_sub_agent": False,
+            },
+        )
+
+        self.assertEqual("answer", route)
+        self.assertEqual("partial", pipeline._retrieval_status_for_route(route, grade))
 
     def test_document_diversity_prefers_other_sources_before_refill(self):
         docs = [
