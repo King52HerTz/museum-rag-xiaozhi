@@ -84,6 +84,7 @@
             <div><dt>知识库无资料</dt><dd>{{ summary.metrics.no_knowledge_count }}</dd></div>
             <div><dt>检索降级</dt><dd>{{ summary.metrics.degraded_count }}</dd></div>
             <div><dt>官网补充成功</dt><dd>{{ summary.metrics.web_success_count }} / {{ summary.metrics.web_attempt_count }}</dd></div>
+            <div v-if="summary.metrics.web_extract_attempt_count"><dt>定向提取成功</dt><dd>{{ summary.metrics.web_extract_success_count }} / {{ summary.metrics.web_extract_attempt_count }}</dd></div>
           </dl>
         </article>
       </section>
@@ -110,6 +111,7 @@
               <span>证据片段：{{ run.retrieved_count }}</span>
               <span v-if="run.reason_code">原因：{{ reasonLabel(run.reason_code) }}</span>
               <span v-if="run.degraded_code">错误码：{{ run.degraded_code }}</span>
+              <span v-if="run.official_web_extract_error_code">提取错误：{{ run.official_web_extract_error_code }}</span>
             </div>
             <blockquote v-if="run.comment">“{{ run.comment }}”</blockquote>
           </article>

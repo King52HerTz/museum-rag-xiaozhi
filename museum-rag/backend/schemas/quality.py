@@ -36,6 +36,9 @@ class QualityRunInfo(BaseModel):
     rerank_backend: str = ""
     rerank_applied: bool = False
     official_web_status: str = ""
+    official_web_extract_status: str = ""
+    official_web_extract_error_code: str = ""
+    official_web_extract_duration_ms: int | None = None
     degraded_code: str = ""
     rating: FeedbackRating | None = None
     reason_code: str = ""
@@ -51,6 +54,8 @@ class QualityMetrics(BaseModel):
     degraded_count: int = 0
     web_attempt_count: int = 0
     web_success_count: int = 0
+    web_extract_attempt_count: int = 0
+    web_extract_success_count: int = 0
     feedback_count: int = 0
     helpful_count: int = 0
     not_helpful_count: int = 0

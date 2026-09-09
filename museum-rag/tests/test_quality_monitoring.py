@@ -114,6 +114,7 @@ def test_quality_summary_exposes_rates_and_failure_queue():
             "retrieval_status": "partial",
             "rating": "not_helpful",
             "official_web_status": "success",
+            "official_web_extract_status": "success",
             "degraded_code": "",
         },
         {
@@ -130,6 +131,8 @@ def test_quality_summary_exposes_rates_and_failure_queue():
     assert summary["metrics"]["answerable_rate"] == 0.3333
     assert summary["metrics"]["helpful_rate"] == 0.5
     assert summary["metrics"]["web_attempt_count"] == 2
+    assert summary["metrics"]["web_extract_attempt_count"] == 1
+    assert summary["metrics"]["web_extract_success_count"] == 1
     assert summary["metrics"]["degraded_count"] == 1
     assert summary["status_distribution"] == {
         "answerable": 1,

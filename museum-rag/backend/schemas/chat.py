@@ -98,6 +98,11 @@ class RagTraceFields(StrictSchema):
     official_web_status: Optional[str] = None
     official_web_error_code: Optional[str] = None
     official_web_evidence_count: Optional[int] = None
+    official_web_extract_enabled: Optional[bool] = None
+    official_web_extract_status: Optional[str] = None
+    official_web_extract_error_code: Optional[str] = None
+    official_web_extract_evidence_count: Optional[int] = None
+    official_web_extract_duration_ms: Optional[int] = None
     retrieval_boilerplate_stripped: Optional[bool] = None
     post_rerank_count: Optional[int] = None
     post_threshold_count: Optional[int] = None

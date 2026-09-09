@@ -173,6 +173,15 @@ def list_quality_runs(db: Session, period_days: int) -> list[dict]:
                     "rerank_backend": str(trace.get("rerank_backend") or ""),
                     "rerank_applied": bool(trace.get("rerank_applied")),
                     "official_web_status": str(trace.get("official_web_status") or ""),
+                    "official_web_extract_status": str(
+                        trace.get("official_web_extract_status") or ""
+                    ),
+                    "official_web_extract_error_code": str(
+                        trace.get("official_web_extract_error_code") or ""
+                    ),
+                    "official_web_extract_duration_ms": trace.get(
+                        "official_web_extract_duration_ms"
+                    ),
                     "degraded_code": str(
                         trace.get("retrieval_degraded_code")
                         or trace.get("provider_error_code")
@@ -200,6 +209,12 @@ def build_quality_summary(
     feedback_count = helpful_count + not_helpful_count
     web_attempt_count = sum(bool(run.get("official_web_status")) for run in runs)
     web_success_count = sum(run.get("official_web_status") == "success" for run in runs)
+    web_extract_attempt_count = sum(
+        bool(run.get("official_web_extract_status")) for run in runs
+    )
+    web_extract_success_count = sum(
+        run.get("official_web_extract_status") == "success" for run in runs
+    )
     failures = [
         run
         for run in runs
@@ -219,6 +234,8 @@ def build_quality_summary(
             "degraded_count": sum(bool(run.get("degraded_code")) for run in runs),
             "web_attempt_count": web_attempt_count,
             "web_success_count": web_success_count,
+            "web_extract_attempt_count": web_extract_attempt_count,
+            "web_extract_success_count": web_extract_success_count,
             "feedback_count": feedback_count,
             "helpful_count": helpful_count,
             "not_helpful_count": not_helpful_count,

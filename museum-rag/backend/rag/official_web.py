@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any, Optional
+from time import monotonic
+from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
 
 from backend.rag.outcomes import outcome_for_status
 
-
 TAVILY_KEYLESS_ENDPOINT = "https://api.tavily.com/search"
+TAVILY_KEYLESS_EXTRACT_ENDPOINT = "https://api.tavily.com/extract"
 OFFICIAL_WEB_DOMAINS = (
     "hnmuseum.com",
     "chnmuseum.cn",
@@ -22,6 +23,7 @@ OFFICIAL_WEB_DOMAINS = (
     "cssn.cn",
 )
 OFFICIAL_WEB_ENABLED = os.getenv("OFFICIAL_WEB_SUPPLEMENT_ENABLED", "true").lower() != "false"
+OFFICIAL_WEB_EXTRACT_ENABLED = os.getenv("OFFICIAL_WEB_EXTRACT_ENABLED", "false").lower() == "true"
 
 
 def _read_positive_int(name: str, default: int, maximum: int) -> int:
@@ -45,6 +47,15 @@ OFFICIAL_WEB_MAX_RESPONSE_BYTES = _read_positive_int(
 )
 OFFICIAL_WEB_MAX_SNIPPET_CHARACTERS = _read_positive_int(
     "OFFICIAL_WEB_MAX_SNIPPET_CHARACTERS", 1_200, 3_000
+)
+OFFICIAL_WEB_MAX_EXTRACT_SOURCES = _read_positive_int(
+    "OFFICIAL_WEB_MAX_EXTRACT_SOURCES", 2, 3
+)
+OFFICIAL_WEB_EXTRACT_CHUNKS_PER_SOURCE = _read_positive_int(
+    "OFFICIAL_WEB_EXTRACT_CHUNKS_PER_SOURCE", 3, 3
+)
+OFFICIAL_WEB_EXTRACT_CHUNK_CHARACTERS = _read_positive_int(
+    "OFFICIAL_WEB_EXTRACT_CHUNK_CHARACTERS", 500, 800
 )
 
 _MUSEUM_SCOPE_MARKERS = (
@@ -90,7 +101,7 @@ def _is_public_museum_query(query: str) -> bool:
     return not any(pattern.search(compact) for pattern in _SENSITIVE_QUERY_PATTERNS)
 
 
-def _canonical_official_url(value: str) -> Optional[str]:
+def _canonical_official_url(value: str) -> str | None:
     try:
         parsed = urlsplit(str(value or "").strip())
         host = (parsed.hostname or "").casefold().rstrip(".")
@@ -110,7 +121,7 @@ def _canonical_official_url(value: str) -> Optional[str]:
     return urlunsplit(("https", host, parsed.path or "/", parsed.query, ""))
 
 
-def search_official_web(query: str, *, session: Optional[requests.Session] = None) -> list[dict]:
+def search_official_web(query: str, *, session: requests.Session | None = None) -> list[dict]:
     if not _is_public_museum_query(query):
         raise OfficialWebError("WEB_QUERY_NOT_PUBLIC_MUSEUM_SCOPE")
 
@@ -181,6 +192,115 @@ def search_official_web(query: str, *, session: Optional[requests.Session] = Non
     return evidence
 
 
+def extract_official_web(
+    document: dict,
+    query: str,
+    *,
+    session: requests.Session | None = None,
+) -> dict:
+    """Replace a search snippet with bounded Tavily query-ranked chunks."""
+    if not _is_public_museum_query(query):
+        raise OfficialWebError("WEB_QUERY_NOT_PUBLIC_MUSEUM_SCOPE")
+    source_url = _canonical_official_url(str(document.get("source_url") or ""))
+    if not source_url:
+        raise OfficialWebError("WEB_EXTRACT_SOURCE_NOT_ALLOWED")
+
+    owned_session = session is None
+    http = session or requests.Session()
+    if owned_session:
+        http.trust_env = False
+    try:
+        response = http.post(
+            TAVILY_KEYLESS_EXTRACT_ENDPOINT,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Tavily-Access-Mode": "keyless",
+                "User-Agent": "museum-rag-official-web/1.0",
+            },
+            json={
+                "urls": source_url,
+                "query": _compact_text(query, 400),
+                "chunks_per_source": OFFICIAL_WEB_EXTRACT_CHUNKS_PER_SOURCE,
+                "extract_depth": "basic",
+            },
+            timeout=OFFICIAL_WEB_TIMEOUT_SECONDS,
+            allow_redirects=False,
+        )
+        if response.status_code != 200:
+            raise OfficialWebError("WEB_EXTRACT_PROVIDER_FAILED")
+        if len(response.content) > OFFICIAL_WEB_MAX_RESPONSE_BYTES:
+            raise OfficialWebError("WEB_EXTRACT_RESPONSE_TOO_LARGE")
+        try:
+            payload = response.json()
+        except (ValueError, TypeError):
+            raise OfficialWebError("WEB_EXTRACT_INVALID_RESPONSE") from None
+    except requests.RequestException:
+        raise OfficialWebError("WEB_EXTRACT_UNAVAILABLE") from None
+    finally:
+        if owned_session:
+            http.close()
+
+    raw_results = payload.get("results") if isinstance(payload, dict) else None
+    if not isinstance(raw_results, list) or not raw_results or not isinstance(raw_results[0], dict):
+        raise OfficialWebError("WEB_EXTRACT_INVALID_RESPONSE")
+    raw_content = raw_results[0].get("raw_content")
+    if isinstance(raw_content, str):
+        raw_chunks = [raw_content]
+    elif isinstance(raw_content, list) and all(isinstance(item, str) for item in raw_content):
+        raw_chunks = raw_content
+    else:
+        raise OfficialWebError("WEB_EXTRACT_INVALID_RESPONSE")
+
+    chunks: list[str] = []
+    for raw_chunk in raw_chunks:
+        chunk = _compact_text(raw_chunk, OFFICIAL_WEB_EXTRACT_CHUNK_CHARACTERS)
+        if chunk and chunk not in chunks:
+            chunks.append(chunk)
+        if len(chunks) >= OFFICIAL_WEB_EXTRACT_CHUNKS_PER_SOURCE:
+            break
+    if not chunks:
+        raise OfficialWebError("WEB_EXTRACT_EMPTY")
+
+    enriched = dict(document)
+    enriched["text"] = "\n\n".join(chunks)
+    return enriched
+
+
+def _enrich_official_documents(query: str, documents: list[dict]) -> tuple[list[dict], dict]:
+    if not OFFICIAL_WEB_EXTRACT_ENABLED or not documents:
+        return documents, {"official_web_extract_enabled": OFFICIAL_WEB_EXTRACT_ENABLED}
+
+    started_at = monotonic()
+    enriched: list[dict] = []
+    success_count = 0
+    errors: list[str] = []
+    for index, document in enumerate(documents):
+        if index >= OFFICIAL_WEB_MAX_EXTRACT_SOURCES:
+            enriched.append(document)
+            continue
+        try:
+            enriched.append(extract_official_web(document, query))
+            success_count += 1
+        except OfficialWebError as exc:
+            enriched.append(document)
+            errors.append(exc.code)
+
+    if success_count == 0:
+        status = "failed"
+    elif errors:
+        status = "partial"
+    else:
+        status = "success"
+    return enriched, {
+        "official_web_extract_enabled": True,
+        "official_web_extract_status": status,
+        "official_web_extract_evidence_count": success_count,
+        "official_web_extract_error_code": errors[0] if errors else None,
+        "official_web_extract_duration_ms": round((monotonic() - started_at) * 1000),
+    }
+
+
 def supplement_rag_result(query: str, rag_result: dict) -> dict:
     """Add bounded official snippets only when healthy local retrieval is incomplete."""
     result = dict(rag_result or {})
@@ -211,6 +331,9 @@ def supplement_rag_result(query: str, rag_result: dict) -> dict:
             "official_web_evidence_count": 0,
         })
         return result
+
+    web_docs, extract_trace = _enrich_official_documents(web_query, web_docs)
+    trace.update(extract_trace)
 
     if relation_candidates:
         web_docs = [
@@ -252,6 +375,7 @@ def supplement_rag_result(query: str, rag_result: dict) -> dict:
 __all__ = [
     "OFFICIAL_WEB_DOMAINS",
     "OfficialWebError",
+    "extract_official_web",
     "search_official_web",
     "supplement_rag_result",
 ]

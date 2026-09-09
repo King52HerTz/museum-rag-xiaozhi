@@ -115,6 +115,15 @@
         <div v-if="msg.ragTrace.expansion_type" class="trace-line">
           扩展策略：{{ msg.ragTrace.expansion_type }}
         </div>
+        <div v-if="msg.ragTrace.official_web_extract_status" class="trace-line">
+          官网定向提取：{{ msg.ragTrace.official_web_extract_status }}
+          <span v-if="msg.ragTrace.official_web_extract_duration_ms !== undefined">
+            （{{ msg.ragTrace.official_web_extract_duration_ms }} ms）
+          </span>
+        </div>
+        <div v-if="msg.ragTrace.official_web_extract_error_code" class="trace-line">
+          官网定向提取错误码：{{ msg.ragTrace.official_web_extract_error_code }}
+        </div>
         <div v-if="msg.ragTrace.step_back_question" class="trace-line">
           退步问题：{{ msg.ragTrace.step_back_question }}
         </div>

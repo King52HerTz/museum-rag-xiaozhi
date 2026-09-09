@@ -54,6 +54,51 @@ def test_search_uses_fixed_keyless_endpoint_and_filters_results():
     assert request["json"]["include_domains"] == list(official_web.OFFICIAL_WEB_DOMAINS)
 
 
+def test_extract_uses_fixed_endpoint_and_bounds_ranked_chunks():
+    session = _Session(
+        _Response({
+            "results": [{
+                "raw_content": ["甲" * 900, "第二段", "第二段", "第四段"],
+            }]
+        })
+    )
+    document = {
+        "filename": "官网：馆方页面",
+        "text": "搜索摘要",
+        "source_kind": "official_web",
+        "source_url": "https://www.hnmuseum.com/page",
+    }
+
+    result = official_web.extract_official_web(
+        document,
+        "辛追墓相关文物",
+        session=session,
+    )
+
+    assert session.calls[0][0] == official_web.TAVILY_KEYLESS_EXTRACT_ENDPOINT
+    request = session.calls[0][1]
+    assert request["allow_redirects"] is False
+    assert request["json"]["urls"] == "https://www.hnmuseum.com/page"
+    assert request["json"]["chunks_per_source"] == 3
+    assert len(result["text"].split("\n\n")) == 3
+    assert len(result["text"].split("\n\n")[0]) == 500
+    assert result["source_url"] == document["source_url"]
+
+
+def test_extract_rejects_non_whitelisted_source_before_request():
+    session = _Session(_Response({"results": []}))
+
+    with pytest.raises(official_web.OfficialWebError) as error:
+        official_web.extract_official_web(
+            {"source_url": "https://example.com/page"},
+            "辛追墓相关文物",
+            session=session,
+        )
+
+    assert error.value.code == "WEB_EXTRACT_SOURCE_NOT_ALLOWED"
+    assert session.calls == []
+
+
 @pytest.mark.parametrize(
     "query",
     [
@@ -132,6 +177,65 @@ def test_relation_candidates_must_all_appear_in_official_snippet():
 
     assert search.call_args.args[0].endswith("张先生 小雨")
     assert result["docs"] == [matching]
+
+
+def test_extract_can_supply_missing_relation_evidence_before_filtering():
+    snippet = {
+        "filename": "官网：人物资料",
+        "text": "搜索摘要没有完整人物关系",
+        "source_kind": "official_web",
+        "source_url": "https://www.hnmuseum.com/person",
+    }
+    extracted = {**snippet, "text": "张先生和小雨的家庭关系资料"}
+    with (
+        patch.object(official_web, "OFFICIAL_WEB_ENABLED", True),
+        patch.object(official_web, "OFFICIAL_WEB_EXTRACT_ENABLED", True),
+        patch.object(official_web, "search_official_web", return_value=[snippet]),
+        patch.object(official_web, "extract_official_web", return_value=extracted),
+    ):
+        result = official_web.supplement_rag_result(
+            "介绍张先生的女儿",
+            {
+                "docs": [],
+                "retrieval_status": "no_knowledge",
+                "rag_trace": {"relation_candidates": ["张先生", "小雨"]},
+            },
+        )
+
+    assert result["docs"] == [extracted]
+    assert result["rag_trace"]["official_web_extract_status"] == "success"
+    assert result["rag_trace"]["official_web_extract_evidence_count"] == 1
+
+
+def test_extract_failure_keeps_search_snippet():
+    snippet = {
+        "filename": "官网：人物资料",
+        "text": "张先生和小雨的家庭关系摘要",
+        "source_kind": "official_web",
+        "source_url": "https://www.hnmuseum.com/person",
+    }
+    with (
+        patch.object(official_web, "OFFICIAL_WEB_ENABLED", True),
+        patch.object(official_web, "OFFICIAL_WEB_EXTRACT_ENABLED", True),
+        patch.object(official_web, "search_official_web", return_value=[snippet]),
+        patch.object(
+            official_web,
+            "extract_official_web",
+            side_effect=official_web.OfficialWebError("WEB_EXTRACT_UNAVAILABLE"),
+        ),
+    ):
+        result = official_web.supplement_rag_result(
+            "介绍张先生的女儿",
+            {
+                "docs": [],
+                "retrieval_status": "no_knowledge",
+                "rag_trace": {"relation_candidates": ["张先生", "小雨"]},
+            },
+        )
+
+    assert result["docs"] == [snippet]
+    assert result["rag_trace"]["official_web_extract_status"] == "failed"
+    assert result["rag_trace"]["official_web_extract_error_code"] == "WEB_EXTRACT_UNAVAILABLE"
 
 
 def test_answerable_result_skips_web_search():

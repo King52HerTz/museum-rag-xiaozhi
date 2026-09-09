@@ -58,6 +58,11 @@ export interface RagTrace {
   official_web_status?: string;
   official_web_error_code?: string;
   official_web_evidence_count?: number;
+  official_web_extract_enabled?: boolean | null;
+  official_web_extract_status?: string;
+  official_web_extract_error_code?: string;
+  official_web_extract_evidence_count?: number;
+  official_web_extract_duration_ms?: number;
   coverage_gap_codes?: string[];
   coverage_gap_questions?: string[];
   expansion_type?: string;

@@ -16,6 +16,8 @@ export interface QualityMetrics {
   degraded_count: number;
   web_attempt_count: number;
   web_success_count: number;
+  web_extract_attempt_count: number;
+  web_extract_success_count: number;
   feedback_count: number;
   helpful_count: number;
   not_helpful_count: number;
@@ -37,6 +39,9 @@ export interface QualityRun {
   rerank_backend: string;
   rerank_applied: boolean;
   official_web_status: string;
+  official_web_extract_status: string;
+  official_web_extract_error_code: string;
+  official_web_extract_duration_ms?: number | null;
   degraded_code: string;
   rating?: FeedbackRating | null;
   reason_code: string;
