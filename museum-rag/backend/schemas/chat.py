@@ -255,6 +255,7 @@ class MessageInfo(StrictSchema):
     content: str
     timestamp: str
     rag_trace: Optional[RagTrace] = None
+    feedback: Optional[dict] = None
 
 
 class SessionMessagesResponse(StrictSchema):

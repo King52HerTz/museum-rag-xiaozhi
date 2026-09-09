@@ -36,6 +36,14 @@
         
         <!-- Deep retrieval traces logs -->
         <RetrievalTraceDetails :msg="msg" />
+
+        <AnswerFeedback
+          v-if="msg.ragTrace && !msg.isThinking"
+          :session-id="chatStore.sessionId"
+          :message-index="msgIndex"
+          :initial-feedback="msg.feedback"
+          :disabled="chatStore.isLoading"
+        />
       </template>
     </template>
   </div>
@@ -47,12 +55,16 @@ import MessageContent from './MessageContent.vue';
 import ThinkingTrace from './ThinkingTrace.vue';
 import References from './References.vue';
 import RetrievalTraceDetails from './RetrievalTraceDetails.vue';
+import AnswerFeedback from './AnswerFeedback.vue';
 import type { Message } from '@/types/chat';
+import { useChatStore } from '@/stores/chat';
 
 const props = defineProps<{
   msg: Message;
   msgIndex: number;
 }>();
+
+const chatStore = useChatStore();
 
 const emit = defineEmits<{
   (e: 'cite-click', msgIndex: number, chunkIndex: number): void;

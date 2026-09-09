@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from backend.chat import storage
 from backend.db.models import User
-from backend.infra.auth import get_current_user
+from backend.infra.auth import get_current_user, get_db
+from backend.quality import get_session_feedback
 from backend.schemas import (
     MessageInfo,
     SessionDeleteResponse,
@@ -15,16 +17,24 @@ router = APIRouter(tags=["sessions"])
 
 
 @router.get("/sessions/{session_id}", response_model=SessionMessagesResponse)
-async def get_session_messages(session_id: str, current_user: User = Depends(get_current_user)):
+async def get_session_messages(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     try:
+        feedback = get_session_feedback(db, current_user.id, session_id)
         messages = [
             MessageInfo(
                 type=msg["type"],
                 content=msg["content"],
                 timestamp=msg["timestamp"],
                 rag_trace=msg.get("rag_trace"),
+                feedback=feedback.get(index),
             )
-            for msg in storage.get_session_messages(current_user.username, session_id)
+            for index, msg in enumerate(
+                storage.get_session_messages(current_user.username, session_id)
+            )
         ]
         return SessionMessagesResponse(messages=messages)
     except Exception as e:

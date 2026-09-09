@@ -100,6 +100,7 @@ export interface Message {
   ragTrace?: RagTrace | null;
   ragSteps?: RagStep[];
   _groupedSteps?: GroupedRagStep[];
+  feedback?: import('./quality').AnswerFeedback | null;
 }
 
 export interface ChatSession {
