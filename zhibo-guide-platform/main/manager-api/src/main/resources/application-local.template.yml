@@ -28,3 +28,11 @@ museum-rag:
   timeout: 60000
   bridge-secret: replace-with-local-bridge-secret
   bridge-expire-seconds: 60
+
+museum:
+  catalog:
+    api-key: replace-with-local-catalog-api-key
+  assets:
+    directory: data/museum/exhibits
+    public-base-url: /xiaozhi/museum/public/v1/assets
+    max-bytes: 8388608

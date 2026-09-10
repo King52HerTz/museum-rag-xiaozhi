@@ -2,10 +2,14 @@ from collections import defaultdict
 from typing import List, Tuple, Dict, Any, Literal, Optional
 import os
 import json
+import math
+import re
+import threading
 import requests
 
 from backend.indexing.milvus_client import get_milvus_store
 from backend.indexing.embedding import embedding_service as _embedding_service
+from backend.indexing.document_loader import strip_indexing_boilerplate
 from backend.indexing.parent_chunk_store import ParentChunkStore
 from backend.infra.provider_errors import classify_provider_error
 from langchain.chat_models import init_chat_model
@@ -34,7 +38,12 @@ BASE_URL = os.getenv("BASE_URL")
 RERANK_MODEL = _optional_env("RERANK_MODEL")
 RERANK_BINDING_HOST = _optional_env("RERANK_BINDING_HOST")
 RERANK_API_KEY = _optional_env("RERANK_API_KEY")
-RERANK_ENABLED = bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST)
+LOCAL_CROSS_ENCODER_MODEL = _optional_env("LOCAL_CROSS_ENCODER_MODEL")
+LOCAL_CROSS_ENCODER_DEVICE = os.getenv("LOCAL_CROSS_ENCODER_DEVICE", "cpu").strip() or "cpu"
+LOCAL_CROSS_ENCODER_OFFLINE = os.getenv("LOCAL_CROSS_ENCODER_OFFLINE", "false").lower() == "true"
+EXTERNAL_RERANK_ENABLED = bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST)
+LOCAL_CROSS_ENCODER_ENABLED = bool(LOCAL_CROSS_ENCODER_MODEL)
+RERANK_ENABLED = EXTERNAL_RERANK_ENABLED or LOCAL_CROSS_ENCODER_ENABLED
 try:
     RERANK_TIMEOUT_SECONDS = max(float(os.getenv("RERANK_TIMEOUT_SECONDS", "5")), 0.1)
 except ValueError:
@@ -54,6 +63,13 @@ def _read_positive_int_env(name: str, default: int) -> int:
 RETRIEVAL_CANDIDATE_MULTIPLIER = _read_positive_int_env("RETRIEVAL_CANDIDATE_MULTIPLIER", 3)
 _RETRIEVAL_CANDIDATE_K_RAW = os.getenv("RETRIEVAL_CANDIDATE_K", "").strip()
 RETRIEVAL_TOP_K = _read_positive_int_env("RETRIEVAL_TOP_K", 8)
+LOCAL_LEXICAL_RERANK_ENABLED = os.getenv("LOCAL_LEXICAL_RERANK_ENABLED", "true").lower() != "false"
+RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT = _read_positive_int_env(
+    "RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT", 2
+)
+RETRIEVAL_STRIP_BOILERPLATE = os.getenv("RETRIEVAL_STRIP_BOILERPLATE", "true").lower() != "false"
+LOCAL_CROSS_ENCODER_BATCH_SIZE = _read_positive_int_env("LOCAL_CROSS_ENCODER_BATCH_SIZE", 4)
+LOCAL_CROSS_ENCODER_MAX_LENGTH = _read_positive_int_env("LOCAL_CROSS_ENCODER_MAX_LENGTH", 512)
 
 
 def _read_float_env(name: str, default: float) -> float:
@@ -64,6 +80,8 @@ def _read_float_env(name: str, default: float) -> float:
 
 
 RERANK_MIN_SCORE = _read_float_env("RERANK_MIN_SCORE", 0.0)
+LOCAL_CROSS_ENCODER_WEIGHT = min(max(_read_float_env("LOCAL_CROSS_ENCODER_WEIGHT", 0.4), 0.0), 1.0)
+LOCAL_CROSS_ENCODER_RRF_K = _read_positive_int_env("LOCAL_CROSS_ENCODER_RRF_K", 60)
 
 RETRIEVAL_TRACE_FIELDS = (
     "retrieval_pipeline",
@@ -87,6 +105,7 @@ RETRIEVAL_TRACE_FIELDS = (
     "auto_merge_steps",
     "rerank_enabled",
     "rerank_applied",
+    "rerank_backend",
     "rerank_model",
     "rerank_endpoint",
     "rerank_error",
@@ -94,6 +113,14 @@ RETRIEVAL_TRACE_FIELDS = (
     "rerank_retryable",
     "rerank_timeout_seconds",
     "rerank_min_score",
+    "rerank_semantic_weight",
+    "local_rerank_enabled",
+    "local_rerank_applied",
+    "retrieval_max_chunks_per_document",
+    "document_diversity_applied",
+    "query_intent",
+    "intent_rerank_applied",
+    "retrieval_boilerplate_stripped",
     "post_rerank_count",
     "post_threshold_count",
     "retrieval_empty",
@@ -109,6 +136,8 @@ _parent_chunk_store = ParentChunkStore()
 
 _rewrite_model = None
 _stepback_model = None
+_local_cross_encoder = None
+_local_cross_encoder_lock = threading.Lock()
 
 
 def resolve_candidate_k(top_k: int) -> Tuple[int, Dict[str, Any]]:
@@ -287,6 +316,294 @@ def _sort_by_rank_score(docs: List[dict]) -> List[dict]:
     return sorted(docs, key=lambda item: _effective_score(item) or 0.0, reverse=True)
 
 
+_QUERY_FILLERS = (
+    "请介绍一下",
+    "介绍一下",
+    "请问",
+    "能不能",
+    "可以",
+    "一下",
+    "相关资料",
+    "有关资料",
+)
+
+
+def _normalize_lexical_text(value: str) -> str:
+    return "".join(re.findall(r"[\u4e00-\u9fffA-Za-z0-9]+", (value or "").lower()))
+
+
+def _query_ngrams(query: str) -> set[str]:
+    normalized = _normalize_lexical_text(query)
+    for filler in _QUERY_FILLERS:
+        normalized = normalized.replace(_normalize_lexical_text(filler), "")
+    terms: set[str] = set()
+    for size in range(2, min(4, len(normalized)) + 1):
+        terms.update(normalized[index:index + size] for index in range(len(normalized) - size + 1))
+    return terms
+
+
+def _query_focus_terms(query: str) -> set[str]:
+    """提取人物关系后的目标实体，例如“辛追的儿子利豨”中的“利豨”。"""
+    normalized = _normalize_lexical_text(query)
+    relation_pattern = r"(?:儿子|女儿|丈夫|妻子|父亲|母亲|墓主人|作者|主人)([\u4e00-\u9fff]{2,4})$"
+    match = re.search(relation_pattern, normalized)
+    if not match or match.group(1) in {"是谁", "叫什么", "怎么样", "是什么"}:
+        return set()
+    return {match.group(1)}
+
+
+_PERSON_RELATIONS = (
+    "儿子",
+    "女儿",
+    "丈夫",
+    "妻子",
+    "父亲",
+    "母亲",
+    "父母",
+    "子女",
+    "后代",
+    "家人",
+    "墓主人",
+)
+_PERSON_PROFILE_CUES = ("介绍", "生平", "经历", "身份", "是谁", "叫什么", "人物")
+_PERSON_PROFILE_FILENAME_CUES = ("一家", "家族", "人物", "生平", "背景", "墓主人")
+_PERSON_PROFILE_TEXT_CUES = (
+    "儿子",
+    "女儿",
+    "丈夫",
+    "妻子",
+    "父亲",
+    "母亲",
+    "一家",
+    "家族",
+    "继承",
+    "爵位",
+    "墓主人",
+    "身份",
+)
+
+
+def detect_query_intent(query: str) -> str:
+    """识别少量高价值检索意图；未知意图保持 general，不猜测具体实体。"""
+    normalized = _normalize_lexical_text(query)
+    has_relation = any(term in normalized for term in _PERSON_RELATIONS)
+    has_profile_cue = any(term in normalized for term in _PERSON_PROFILE_CUES)
+    relation_is_question_target = any(normalized.endswith(term) for term in _PERSON_RELATIONS)
+    if has_relation and (has_profile_cue or relation_is_question_target):
+        return "person_profile"
+    return "general"
+
+
+_RELATION_ENTITY_STOPWORDS = {
+    "家庭",
+    "家族",
+    "人物",
+    "身份",
+    "姓名",
+    "一家三口",
+    "墓主人",
+    "官方结论",
+    "官方来源",
+}
+
+
+def extract_relation_candidates(query: str, docs: Optional[List[dict]] = None) -> List[str]:
+    """从初次证据的引号实体中提取候选名，仅用于二次检索，不当作事实。"""
+    normalized_query = _normalize_lexical_text(query)
+    candidates: List[str] = []
+    # 意图排序后的首个资料最接近问题；限制来源，避免后续泛化片段注入无关名词。
+    for doc in (docs or [])[:1]:
+        text = str(doc.get("text") or "")
+        for candidate in re.findall(r"[“\"]([\u4e00-\u9fff]{2,4})[”\"]", text):
+            if candidate in _RELATION_ENTITY_STOPWORDS or candidate in _PERSON_RELATIONS:
+                continue
+            if _normalize_lexical_text(candidate) in normalized_query:
+                continue
+            if candidate not in candidates:
+                candidates.append(candidate)
+            if len(candidates) >= 3:
+                return candidates
+    return candidates
+
+
+def expand_relation_query(query: str, docs: Optional[List[dict]] = None) -> Optional[str]:
+    """为关系型人物问题生成确定性检索扩展，不依赖模型猜出目标姓名。"""
+    if detect_query_intent(query) != "person_profile":
+        return None
+    normalized = query.strip()
+    if not normalized:
+        return None
+    candidates = extract_relation_candidates(query, docs)
+    candidate_text = f" 候选实体 {' '.join(candidates)}" if candidates else ""
+    return f"{normalized}\n人物姓名 身份 家庭关系 生平 经历 墓葬{candidate_text}"
+
+
+def _person_profile_score(doc: dict) -> int:
+    filename = _normalize_lexical_text(str(doc.get("filename") or ""))
+    text = _normalize_lexical_text(str(doc.get("text") or ""))
+    filename_score = sum(3 for cue in _PERSON_PROFILE_FILENAME_CUES if cue in filename)
+    text_score = sum(1 for cue in _PERSON_PROFILE_TEXT_CUES if cue in text)
+    return filename_score + min(text_score, 6)
+
+
+def _promote_intent_matches(query: str, docs: List[dict]) -> Tuple[List[dict], bool]:
+    """人物介绍优先人物/家庭证据，避免单件器物因重复提名占据首位。"""
+    intent = detect_query_intent(query)
+    if intent != "person_profile":
+        return docs, False
+
+    scored = [(_person_profile_score(doc), index, doc) for index, doc in enumerate(docs)]
+    if not any(score >= 4 for score, _, _ in scored):
+        return docs, False
+    strong = sorted(
+        (item for item in scored if item[0] >= 4),
+        key=lambda item: (item[0], -item[1]),
+        reverse=True,
+    )
+    remaining = [item for item in scored if item[0] < 4]
+    ranked = [doc for _, _, doc in strong + remaining]
+    return ranked, ranked != docs
+
+
+def _local_lexical_rerank(query: str, docs: List[dict]) -> List[dict]:
+    """用精确中文实体/关系短语补强 RRF；无匹配时保持原召回顺序。"""
+    terms = _query_ngrams(query)
+    focus_terms = _query_focus_terms(query)
+    reranked: List[dict] = []
+    for index, source in enumerate(docs, 1):
+        doc = dict(source)
+        text = _normalize_lexical_text(str(doc.get("text") or ""))
+        filename = _normalize_lexical_text(str(doc.get("filename") or ""))
+        text_score = sum(len(term) ** 2 for term in terms if term in text)
+        filename_score = sum(len(term) ** 2 for term in terms if term in filename)
+        focus_matches = sum(1 for term in focus_terms if term in text or term in filename)
+        focus_score = focus_matches * 200
+        doc["local_rerank_score"] = float(text_score + filename_score * 2 + focus_score)
+        doc["local_focus_match"] = focus_matches > 0
+        doc.setdefault("rrf_rank", index)
+        reranked.append(doc)
+    return sorted(
+        reranked,
+        key=lambda item: (
+            bool(item.get("local_focus_match")),
+            -int(item.get("rrf_rank") or 0),
+        ),
+        reverse=True,
+    )
+
+
+def _promote_focus_matches(query: str, docs: List[dict]) -> List[dict]:
+    focus_terms = _query_focus_terms(query)
+    if not focus_terms:
+        return docs
+
+    def has_focus(doc: dict) -> bool:
+        content = _normalize_lexical_text(
+            f"{doc.get('filename') or ''} {doc.get('text') or ''}"
+        )
+        return any(term in content for term in focus_terms)
+
+    return [doc for _, doc in sorted(
+        enumerate(docs),
+        key=lambda item: (has_focus(item[1]), -item[0]),
+        reverse=True,
+    )]
+
+
+def _prefer_document_diversity(docs: List[dict], top_k: int) -> Tuple[List[dict], bool]:
+    """优先限制单文档片段数；唯一文档不足时回填，确保不损失可用结果。"""
+    selected: List[dict] = []
+    deferred: List[dict] = []
+    counts: Dict[str, int] = defaultdict(int)
+    for doc in docs:
+        filename = str(doc.get("filename") or "")
+        if counts[filename] < RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:
+            selected.append(doc)
+            counts[filename] += 1
+        else:
+            deferred.append(doc)
+        if len(selected) >= top_k:
+            break
+
+    if len(selected) < top_k:
+        selected.extend(deferred[:top_k - len(selected)])
+    result = selected[:top_k]
+    original = docs[:top_k]
+    changed = [id(item) for item in result] != [id(item) for item in original]
+    return result, changed
+
+
+def _clean_retrieval_context(docs: List[dict]) -> Tuple[List[dict], bool]:
+    if not RETRIEVAL_STRIP_BOILERPLATE:
+        return docs, False
+    cleaned: List[dict] = []
+    changed = False
+    for source in docs:
+        doc = dict(source)
+        original = str(doc.get("text") or "")
+        normalized = strip_indexing_boilerplate(original)
+        if normalized != original.strip():
+            doc["text"] = normalized
+            changed = True
+        cleaned.append(doc)
+    return cleaned, changed
+
+
+def _get_local_cross_encoder():
+    global _local_cross_encoder
+    if not LOCAL_CROSS_ENCODER_MODEL:
+        return None
+    if _local_cross_encoder is None:
+        with _local_cross_encoder_lock:
+            if _local_cross_encoder is None:
+                from sentence_transformers import CrossEncoder
+
+                _local_cross_encoder = CrossEncoder(
+                    LOCAL_CROSS_ENCODER_MODEL,
+                    device=LOCAL_CROSS_ENCODER_DEVICE,
+                    max_length=LOCAL_CROSS_ENCODER_MAX_LENGTH,
+                    local_files_only=LOCAL_CROSS_ENCODER_OFFLINE,
+                )
+    return _local_cross_encoder
+
+
+def _normalize_cross_encoder_score(value: Any) -> float:
+    if hasattr(value, "item"):
+        value = value.item()
+    score = float(value)
+    if 0.0 <= score <= 1.0:
+        return score
+    score = max(min(score, 30.0), -30.0)
+    return 1.0 / (1.0 + math.exp(-score))
+
+
+def _rerank_with_local_cross_encoder(query: str, docs: List[dict]) -> List[dict]:
+    model = _get_local_cross_encoder()
+    if model is None:
+        raise RuntimeError("local cross encoder is not configured")
+    pairs = [(query, str(doc.get("text") or "")) for doc in docs]
+    scores = model.predict(
+        pairs,
+        batch_size=LOCAL_CROSS_ENCODER_BATCH_SIZE,
+        show_progress_bar=False,
+    )
+    if len(scores) != len(docs):
+        raise ValueError("local cross encoder returned an invalid score count")
+    reranked = []
+    for source, score in zip(docs, scores):
+        doc = dict(source)
+        doc["rerank_score"] = _normalize_cross_encoder_score(score)
+        reranked.append(doc)
+    semantic_ranked = _sort_by_rank_score(reranked)
+    for semantic_rank, doc in enumerate(semantic_ranked, 1):
+        rrf_rank = max(int(doc.get("rrf_rank") or semantic_rank), 1)
+        doc["rerank_fused_score"] = (
+            LOCAL_CROSS_ENCODER_WEIGHT / (LOCAL_CROSS_ENCODER_RRF_K + semantic_rank)
+            + (1.0 - LOCAL_CROSS_ENCODER_WEIGHT) / (LOCAL_CROSS_ENCODER_RRF_K + rrf_rank)
+        )
+    return sorted(semantic_ranked, key=lambda item: item["rerank_fused_score"], reverse=True)
+
+
 def dedupe_documents(docs: List[dict]) -> List[dict]:
     """按 chunk_id 去重；重复项保留更高 rank 分（rerank_score 优先）。"""
     by_key: Dict[str, dict] = {}
@@ -304,25 +621,72 @@ def dedupe_documents(docs: List[dict]) -> List[dict]:
 
 def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[dict], Dict[str, Any]]:
     docs_with_rank = [{**doc, "rrf_rank": i} for i, doc in enumerate(docs, 1)]
+    external_enabled = bool(RERANK_MODEL and RERANK_API_KEY and RERANK_BINDING_HOST)
+    local_cross_encoder_enabled = bool(LOCAL_CROSS_ENCODER_MODEL)
     meta: Dict[str, Any] = {
-        "rerank_enabled": RERANK_ENABLED,
+        "rerank_enabled": external_enabled or local_cross_encoder_enabled,
         "rerank_applied": False,
-        "rerank_model": RERANK_MODEL,
-        "rerank_endpoint": _get_rerank_endpoint(),
+        "rerank_backend": (
+            "external" if external_enabled
+            else "local_cross_encoder" if local_cross_encoder_enabled
+            else "local_lexical" if LOCAL_LEXICAL_RERANK_ENABLED
+            else "rrf"
+        ),
+        "rerank_model": RERANK_MODEL if external_enabled else LOCAL_CROSS_ENCODER_MODEL,
+        "rerank_endpoint": _get_rerank_endpoint() if external_enabled else "",
         "rerank_error": None,
         "rerank_error_code": None,
         "rerank_retryable": None,
         "rerank_timeout_seconds": RERANK_TIMEOUT_SECONDS,
+        "rerank_semantic_weight": (
+            LOCAL_CROSS_ENCODER_WEIGHT if local_cross_encoder_enabled and not external_enabled else None
+        ),
         "candidate_count": len(docs_with_rank),
+        "local_rerank_enabled": LOCAL_LEXICAL_RERANK_ENABLED,
+        "local_rerank_applied": False,
+        "retrieval_max_chunks_per_document": RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT,
+        "document_diversity_applied": False,
+        "query_intent": detect_query_intent(query),
+        "intent_rerank_applied": False,
     }
-    if not docs_with_rank or not meta["rerank_enabled"]:
-        return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+    if not docs_with_rank:
+        return [], meta
+
+    def fallback() -> List[dict]:
+        ranked = _sort_by_rank_score(docs_with_rank)
+        if LOCAL_LEXICAL_RERANK_ENABLED:
+            ranked = _local_lexical_rerank(query, ranked)
+            meta["local_rerank_applied"] = True
+        ranked, intent_changed = _promote_intent_matches(query, ranked)
+        meta["intent_rerank_applied"] = intent_changed
+        diversified, changed = _prefer_document_diversity(ranked, top_k)
+        meta["document_diversity_applied"] = changed
+        return diversified
+
+    if local_cross_encoder_enabled and not external_enabled:
+        try:
+            meta["rerank_applied"] = True
+            reranked = _rerank_with_local_cross_encoder(query, docs_with_rank)
+            reranked = _promote_focus_matches(query, reranked)
+            reranked, intent_changed = _promote_intent_matches(query, reranked)
+            meta["intent_rerank_applied"] = intent_changed
+            diversified, changed = _prefer_document_diversity(reranked, top_k)
+            meta["document_diversity_applied"] = changed
+            return diversified, meta
+        except Exception:
+            meta["rerank_error"] = "LOCAL_RERANK_UNAVAILABLE"
+            meta["rerank_error_code"] = "LOCAL_RERANK_UNAVAILABLE"
+            meta["rerank_retryable"] = False
+            return fallback(), meta
+
+    if not external_enabled:
+        return fallback(), meta
 
     payload = {
         "model": RERANK_MODEL,
         "query": query,
         "documents": [doc.get("text", "") for doc in docs_with_rank],
-        "top_n": min(top_k, len(docs_with_rank)),
+        "top_n": len(docs_with_rank),
         "return_documents": False,
     }
 
@@ -345,7 +709,7 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
             meta["rerank_error"] = public_error.code
             meta["rerank_error_code"] = public_error.code
             meta["rerank_retryable"] = public_error.retryable
-            return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+            return fallback(), meta
 
         items = response.json().get("results", [])
         reranked = []
@@ -359,18 +723,22 @@ def _rerank_documents(query: str, docs: List[dict], top_k: int) -> Tuple[List[di
                 reranked.append(doc)
 
         if reranked:
-            return reranked[:top_k], meta
+            reranked, intent_changed = _promote_intent_matches(query, reranked)
+            meta["intent_rerank_applied"] = intent_changed
+            diversified, changed = _prefer_document_diversity(reranked, top_k)
+            meta["document_diversity_applied"] = changed
+            return diversified, meta
 
         meta["rerank_error"] = "RERANK_EMPTY_RESPONSE"
         meta["rerank_error_code"] = "RERANK_EMPTY_RESPONSE"
         meta["rerank_retryable"] = False
-        return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+        return fallback(), meta
     except (requests.RequestException, json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
         public_error = classify_provider_error(e)
         meta["rerank_error"] = public_error.code
         meta["rerank_error_code"] = public_error.code
         meta["rerank_retryable"] = public_error.retryable
-        return _sort_by_rank_score(docs_with_rank)[:top_k], meta
+        return fallback(), meta
 
 
 class RewritePlan(BaseModel):
@@ -421,8 +789,19 @@ def _get_rewrite_model():
     return _rewrite_model
 
 
-def rewrite_query_once(query: str) -> dict:
+def rewrite_query_once(query: str, candidate_docs: Optional[List[dict]] = None) -> dict:
     """Run one structured query rewrite plan for the upgraded RAG pipeline."""
+    relation_candidates = extract_relation_candidates(query, candidate_docs)
+    relation_expansion = expand_relation_query(query, candidate_docs)
+    if relation_expansion:
+        return {
+            "rewrite_method": "relation_expansion",
+            "rewritten_query": relation_expansion,
+            "step_back_question": "",
+            "hyde_document": "",
+            "relation_candidates": relation_candidates,
+        }
+
     model = _get_rewrite_model()
     if not model:
         raise RuntimeError("FAST_MODEL is required for query rewriting")
@@ -548,7 +927,8 @@ def _finalize_retrieval(
     candidates, merge_meta = _auto_merge_candidates(retrieved)
     reranked_docs, rerank_meta = _rerank_documents(query=query, docs=candidates, top_k=top_k)
     post_rerank_count = len(reranked_docs)
-    final_docs = [d for d in reranked_docs if _meets_rerank_min_score(d)]
+    threshold_docs = [d for d in reranked_docs if _meets_rerank_min_score(d)]
+    final_docs, boilerplate_stripped = _clean_retrieval_context(threshold_docs)
     meta = {
         **rerank_meta,
         **merge_meta,
@@ -562,6 +942,7 @@ def _finalize_retrieval(
         "rerank_min_score": RERANK_MIN_SCORE,
         "post_rerank_count": post_rerank_count,
         "post_threshold_count": len(final_docs),
+        "retrieval_boilerplate_stripped": boilerplate_stripped,
         "retrieval_empty": len(final_docs) == 0,
     }
     return {"docs": final_docs, "meta": meta}

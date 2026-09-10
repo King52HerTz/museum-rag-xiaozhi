@@ -52,6 +52,10 @@
 
       <section class="workspace-card">
         <el-tabs v-model="activeWorkspace" class="workspace-tabs">
+          <el-tab-pane name="exhibits">
+            <span slot="label"><i class="el-icon-collection"></i> 展品内容</span>
+            <MuseumExhibitCenter @open-knowledge="openExhibitKnowledge" />
+          </el-tab-pane>
           <el-tab-pane name="documents">
             <span slot="label"><i class="el-icon-folder-opened"></i> 资料管理</span>
 
@@ -270,6 +274,7 @@
 
 <script>
 import HeaderBar from "@/components/HeaderBar.vue";
+import MuseumExhibitCenter from "@/components/MuseumExhibitCenter.vue";
 import Api from "@/apis/api";
 
 const SAMPLE_QUESTIONS = [
@@ -280,17 +285,18 @@ const SAMPLE_QUESTIONS = [
 
 export default {
   name: "MuseumKnowledge",
-  components: { HeaderBar },
+  components: { HeaderBar, MuseumExhibitCenter },
   data: function () {
     return {
       workbenchUrl: (process.env.VUE_APP_MUSEUM_WORKBENCH_URL || "http://127.0.0.1:8000/").trim(),
       workbenchMessage: "",
       workbenchLoading: false,
-      activeWorkspace: "documents",
+      activeWorkspace: "exhibits",
       documents: [],
       documentsLoading: false,
       documentLoadFailed: false,
       documentKeyword: "",
+      selectedExhibit: null,
       documentExhibition: "",
       uploadLoading: false,
       uploadFilename: "",
@@ -333,7 +339,7 @@ export default {
     filteredDocuments: function () {
       const keyword = this.documentKeyword.trim().toLowerCase();
       return this.documents.filter((item) => {
-        const matchesKeyword = !keyword || String(item.filename || "").toLowerCase().includes(keyword);
+        const matchesKeyword = !keyword || String(item.filename || "").toLowerCase().includes(keyword) || String(item.exhibit_id || "").toLowerCase().includes(keyword);
         const matchesExhibition = !this.documentExhibition || item.exhibition === this.documentExhibition;
         return matchesKeyword && matchesExhibition;
       });
@@ -364,6 +370,12 @@ export default {
     }
   },
   methods: {
+    openExhibitKnowledge: function (exhibit) {
+      this.activeWorkspace = "documents";
+      this.selectedExhibit = exhibit;
+      this.documentKeyword = exhibit.id;
+      this.$message.info("已切换到资料管理，请上传或查找展品 ID 为 " + exhibit.id + " 的资料");
+    },
     unwrap: function (res) {
       if (res && res.data && res.data.data) {
         return res.data.data;
@@ -419,7 +431,10 @@ export default {
         file,
         {
           museum: this.queryForm.museum || "湖南省博物馆",
-          exhibition: this.queryForm.exhibition || "长沙马王堆汉墓陈列"
+          exhibition: (this.selectedExhibit && this.selectedExhibit.exhibition) || this.queryForm.exhibition || "长沙马王堆汉墓陈列",
+          exhibit_id: this.selectedExhibit && this.selectedExhibit.id,
+          era: this.selectedExhibit && this.selectedExhibit.era,
+          category: this.selectedExhibit && this.selectedExhibit.category
         },
         (res) => {
           const data = this.unwrap(res);

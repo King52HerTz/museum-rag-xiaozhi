@@ -90,7 +90,7 @@ public class MuseumRagService {
         return get("/documents/upload/jobs/" + encodePath(jobId));
     }
 
-    public Object uploadDocument(MultipartFile file, String museum, String exhibition) {
+    public Object uploadDocument(MultipartFile file, String museum, String exhibition, String exhibitId, String era, String category) {
         File tempFile = null;
         try {
             if (file == null || file.isEmpty()) {
@@ -112,6 +112,15 @@ public class MuseumRagService {
             }
             if (exhibition != null && !exhibition.isBlank()) {
                 request.form("exhibition", exhibition.trim());
+            }
+            if (exhibitId != null && !exhibitId.isBlank()) {
+                request.form("exhibit_id", exhibitId.trim());
+            }
+            if (era != null && !era.isBlank()) {
+                request.form("era", era.trim());
+            }
+            if (category != null && !category.isBlank()) {
+                request.form("category", category.trim());
             }
             HttpResponse response = request.execute();
             return parseResponse(response, "上传文档失败");

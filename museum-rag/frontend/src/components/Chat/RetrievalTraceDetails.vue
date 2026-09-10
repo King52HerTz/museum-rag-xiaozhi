@@ -79,8 +79,14 @@
         <div v-if="msg.ragTrace.rerank_applied !== null && msg.ragTrace.rerank_applied !== undefined" class="trace-line">
           Rerank已执行：{{ msg.ragTrace.rerank_applied ? '是' : '否' }}
         </div>
+        <div v-if="msg.ragTrace.rerank_backend" class="trace-line">
+          Rerank后端：{{ msg.ragTrace.rerank_backend }}
+        </div>
         <div v-if="msg.ragTrace.rerank_model" class="trace-line">
           Rerank模型：{{ msg.ragTrace.rerank_model }}
+        </div>
+        <div v-if="msg.ragTrace.rerank_semantic_weight !== null && msg.ragTrace.rerank_semantic_weight !== undefined" class="trace-line">
+          语义精排权重：{{ msg.ragTrace.rerank_semantic_weight }}
         </div>
         <div v-if="msg.ragTrace.rerank_error" class="trace-line">
           Rerank状态：{{ msg.ragTrace.rerank_error }}
@@ -91,8 +97,32 @@
         <div v-if="msg.ragTrace.rerank_retryable !== null && msg.ragTrace.rerank_retryable !== undefined" class="trace-line">
           Rerank可重试：{{ msg.ragTrace.rerank_retryable ? '是' : '否' }}
         </div>
+        <div v-if="msg.ragTrace.local_rerank_enabled !== null && msg.ragTrace.local_rerank_enabled !== undefined" class="trace-line">
+          本地实体重排已启用：{{ msg.ragTrace.local_rerank_enabled ? '是' : '否' }}
+        </div>
+        <div v-if="msg.ragTrace.local_rerank_applied !== null && msg.ragTrace.local_rerank_applied !== undefined" class="trace-line">
+          本地实体重排已执行：{{ msg.ragTrace.local_rerank_applied ? '是' : '否' }}
+        </div>
+        <div v-if="msg.ragTrace.retrieval_max_chunks_per_document" class="trace-line">
+          单文档优先片段上限：{{ msg.ragTrace.retrieval_max_chunks_per_document }}
+        </div>
+        <div v-if="msg.ragTrace.document_diversity_applied !== null && msg.ragTrace.document_diversity_applied !== undefined" class="trace-line">
+          文档多样化已执行：{{ msg.ragTrace.document_diversity_applied ? '是' : '否' }}
+        </div>
+        <div v-if="msg.ragTrace.retrieval_boilerplate_stripped !== null && msg.ragTrace.retrieval_boilerplate_stripped !== undefined" class="trace-line">
+          回答上下文去噪：{{ msg.ragTrace.retrieval_boilerplate_stripped ? '是' : '否' }}
+        </div>
         <div v-if="msg.ragTrace.expansion_type" class="trace-line">
           扩展策略：{{ msg.ragTrace.expansion_type }}
+        </div>
+        <div v-if="msg.ragTrace.official_web_extract_status" class="trace-line">
+          官网定向提取：{{ msg.ragTrace.official_web_extract_status }}
+          <span v-if="msg.ragTrace.official_web_extract_duration_ms !== undefined">
+            （{{ msg.ragTrace.official_web_extract_duration_ms }} ms）
+          </span>
+        </div>
+        <div v-if="msg.ragTrace.official_web_extract_error_code" class="trace-line">
+          官网定向提取错误码：{{ msg.ragTrace.official_web_extract_error_code }}
         </div>
         <div v-if="msg.ragTrace.step_back_question" class="trace-line">
           退步问题：{{ msg.ragTrace.step_back_question }}
@@ -171,6 +201,9 @@
                 <span class="source-page">RRF名次：#{{ chunk.rrf_rank || (sIndex + 1) }}</span>
                 <span v-if="chunk.rerank_score !== null && chunk.rerank_score !== undefined" class="source-page">
                   Rerank分数：{{ Number(chunk.rerank_score).toFixed(4) }}
+                </span>
+                <span v-if="chunk.local_rerank_score !== null && chunk.local_rerank_score !== undefined" class="source-page">
+                  本地重排分：{{ Number(chunk.local_rerank_score).toFixed(0) }}
                 </span>
               </div>
               <div v-if="chunk.text" class="source-excerpt">{{ chunk.text }}</div>

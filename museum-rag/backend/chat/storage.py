@@ -2,7 +2,7 @@ from datetime import datetime
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from backend.db.models import ChatMessage, ChatSession, User
+from backend.db.models import AnswerFeedback, ChatMessage, ChatSession, User
 from backend.infra.cache import cache
 from backend.infra.database import SessionLocal
 from backend.schemas.chat import normalize_rag_trace
@@ -213,6 +213,10 @@ class ConversationStorage:
             if not session:
                 return False
 
+            db.query(AnswerFeedback).filter(
+                AnswerFeedback.user_id == user.id,
+                AnswerFeedback.session_id == session_id,
+            ).delete(synchronize_session=False)
             db.delete(session)
             db.commit()
             cache.delete(self._messages_cache_key(user_id, session_id))

@@ -33,6 +33,13 @@ from backend.schemas.documents import (
     DocumentUploadStartResponse,
     UploadStepInfo,
 )
+from backend.schemas.quality import (
+    AnswerFeedbackInfo,
+    AnswerFeedbackRequest,
+    QualityMetrics,
+    QualityRunInfo,
+    QualitySummaryResponse,
+)
 
 __all__ = [
     "RegisterRequest",
@@ -64,4 +71,9 @@ __all__ = [
     "DocumentDeleteStartResponse",
     "DocumentDeleteJobResponse",
     "DocumentDeleteResponse",
+    "AnswerFeedbackInfo",
+    "AnswerFeedbackRequest",
+    "QualityMetrics",
+    "QualityRunInfo",
+    "QualitySummaryResponse",
 ]

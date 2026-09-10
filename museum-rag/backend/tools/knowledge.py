@@ -11,6 +11,7 @@ from backend.rag.outcomes import (
     retrieval_user_message,
 )
 from backend.rag.pipeline import run_rag_graph
+from backend.rag.official_web import supplement_rag_result
 
 _KNOWLEDGE_TOOL_CALLS_THIS_TURN = 0
 
@@ -92,6 +93,7 @@ def make_search_knowledge_base(ctx: ChatRequestContext):
 
         with use_request_context(ctx):
             rag_result = run_rag_graph(query, ctx)
+            rag_result = supplement_rag_result(query, rag_result)
 
         rag_trace = rag_result.get("rag_trace", {}) if isinstance(rag_result, dict) else {}
         hitl_resume_state = (
@@ -116,6 +118,7 @@ def search_knowledge_base(query: str) -> str:
         )
 
     rag_result = run_rag_graph(query)
+    rag_result = supplement_rag_result(query, rag_result)
 
     rag_trace = rag_result.get("rag_trace", {}) if isinstance(rag_result, dict) else {}
     record_rag_context(rag_trace)

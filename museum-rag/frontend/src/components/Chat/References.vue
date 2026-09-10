@@ -19,7 +19,15 @@
               :data-chunk-index="cIdx + 1"
               @click="onCiteClick(cIdx + 1)"
             >[{{ cIdx + 1 }}]</span>
-            <span class="source-file">{{ chunk.filename }}</span>
+            <a
+              v-if="chunk.source_url"
+              class="source-file"
+              :href="chunk.source_url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{{ chunk.filename }}</a>
+            <span v-else class="source-file">{{ chunk.filename }}</span>
+            <span v-if="chunk.source_kind === 'official_web'" class="source-page"> · 官网补充</span>
             <span v-if="chunk.page_number" class="source-page"> - 第 {{ chunk.page_number }} 页</span>
           </div>
           <div class="source-meta-line">

@@ -15,7 +15,10 @@
         <i class="fas fa-history"></i> 历史记录
       </button>
       <button v-if="authStore.isAdmin" @click="onSettings" :class="['nav-btn', { active: chatStore.activeNav === 'settings' }]">
-        <i class="fas fa-cog"></i> 设置
+        <i class="fas fa-folder-open"></i> 文档管理
+      </button>
+      <button v-if="authStore.isAdmin" @click="onQuality" :class="['nav-btn', { active: chatStore.activeNav === 'quality' }]">
+        <i class="fas fa-chart-line"></i> 质量监控
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -81,6 +84,15 @@ const onSettings = () => {
     return;
   }
   chatStore.activeNav = 'settings';
+  sessionStore.showHistorySidebar = false;
+};
+
+const onQuality = () => {
+  if (!authStore.isAdmin) {
+    alert('仅管理员可访问质量监控');
+    return;
+  }
+  chatStore.activeNav = 'quality';
   sessionStore.showHistorySidebar = false;
 };
 </script>

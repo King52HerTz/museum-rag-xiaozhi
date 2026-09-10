@@ -46,6 +46,33 @@ class ChatMessage(Base):
     session = relationship("ChatSession", back_populates="messages")
 
 
+class AnswerFeedback(Base):
+    __tablename__ = "answer_feedback"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "session_id",
+            "message_index",
+            name="uq_answer_feedback_target",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    session_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    message_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    rating: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    reason_code: Mapped[str] = mapped_column(String(40), default="", nullable=False)
+    comment: Mapped[str] = mapped_column(String(500), default="", nullable=False)
+    query_snapshot: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    answer_snapshot: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    rag_trace: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class ParentChunk(Base):
     __tablename__ = "parent_chunks"
 

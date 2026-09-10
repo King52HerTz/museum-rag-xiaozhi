@@ -111,6 +111,7 @@
 # User uploads, generated files, logs, databases
 **/uploadfile/
 **/uploads/
+**/data/museum/exhibits/
 **/tmp/
 **/logs/
 **/*.log

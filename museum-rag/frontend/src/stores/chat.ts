@@ -9,7 +9,7 @@ export const useChatStore = defineStore('chat', {
     messages: [] as Message[],
     userInput: '',
     isLoading: false,
-    activeNav: 'newChat' as 'newChat' | 'history' | 'settings',
+    activeNav: 'newChat' as 'newChat' | 'history' | 'settings' | 'quality',
     sessionId: 'session_' + Date.now(),
     abortController: null as AbortController | null,
   }),
@@ -80,6 +80,7 @@ export const useChatStore = defineStore('chat', {
           text: msg.content,
           isUser: msg.type === 'human',
           ragTrace: msg.rag_trace || null,
+          feedback: msg.feedback || null,
         }));
       } catch (error: any) {
         const errMsg = error.response?.data?.detail || error.message || '加载会话失败';

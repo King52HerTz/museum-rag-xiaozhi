@@ -11,6 +11,7 @@ import voiceClone from './module/voiceClone.js'
 import voiceResource from './module/voiceResource.js'
 import knowledgeBase from './module/knowledgeBase.js'
 import museumRag from './module/museumRag.js'
+import museumExhibit from './module/museumExhibit.js'
 import correctWord from './module/correctWord.js'
 import addressBook from './module/addressBook.js'
 
@@ -46,6 +47,7 @@ export default {
     voiceClone,
     knowledgeBase,
     museumRag,
+    museumExhibit,
     correctWord,
     addressBook
   }

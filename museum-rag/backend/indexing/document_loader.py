@@ -11,6 +11,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 _CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 # 编译零宽字符和不可见格式化控制字符（零宽空白、BOM 标记、左右强排标志等）
 _INVISIBLE_CHAR_RE = re.compile(r"[\u200b-\u200d\ufeff\u200f\u202a-\u202e]")
+_BOILERPLATE_VALUE_HEADINGS = {"资料范围", "权威来源", "整理日期", "使用边界"}
 
 
 def sanitize_text(text: str) -> str:
@@ -46,6 +47,33 @@ def sanitize_text(text: str) -> str:
         cleaned = "".join(chars)
         
     return cleaned
+
+
+def strip_indexing_boilerplate(text: str) -> str:
+    """移除批量资料转换时重复注入的页眉和管理字段，保留正文与来源内容。"""
+    if not text:
+        return ""
+    kept: list[str] = []
+    skip_next_value = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if skip_next_value:
+            if stripped:
+                skip_next_value = False
+            continue
+        if stripped in _BOILERPLATE_VALUE_HEADINGS:
+            skip_next_value = True
+            continue
+        if (
+            stripped.startswith("智博导览 · 湖南博物院官方知识库")
+            or stripped == "官方知识库资料"
+            or stripped.startswith("Markdown 主资料转换版 ·")
+            or stripped.startswith("资料标记：来源级别：")
+            or stripped == "第  页"
+        ):
+            continue
+        kept.append(line.rstrip())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
 
 
 class DocumentLoader:
@@ -183,8 +211,11 @@ class DocumentLoader:
                 "file_type": sanitize_text(doc_type),
                 "page_number": page_num,
             }
+            clean_text = sanitize_text((doc.page_content or "").strip())
+            if os.getenv("INDEXING_STRIP_BOILERPLATE", "false").lower() == "true":
+                clean_text = strip_indexing_boilerplate(clean_text)
             page_chunks = self._split_page_to_three_levels(
-                text=sanitize_text((doc.page_content or "").strip()),
+                text=clean_text,
                 base_doc=base_doc,
                 page_global_chunk_idx=page_global_chunk_idx,
             )

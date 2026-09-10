@@ -157,6 +157,26 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("", result["step_back_question"])
         self.assertIn("假设性答案文档", result["rewritten_query"])
 
+    def test_relationship_question_uses_deterministic_query_expansion(self):
+        result = utils.rewrite_query_once(
+            "张先生的女儿介绍一下",
+            [
+                {"text": "一家人包括张先生、王女士和“小雨”。"},
+                {"text": "无关资料中的“后续计划”和“宣传活动”。"},
+            ],
+        )
+
+        self.assertEqual("relation_expansion", result["rewrite_method"])
+        self.assertIn("张先生的女儿介绍一下", result["rewritten_query"])
+        self.assertIn("人物姓名 身份 家庭关系", result["rewritten_query"])
+        self.assertIn("候选实体 小雨", result["rewritten_query"])
+        self.assertEqual(["小雨"], result["relation_candidates"])
+        self.assertEqual("person_profile", utils.detect_query_intent("张先生的女儿介绍一下"))
+        self.assertEqual("person_profile", utils.detect_query_intent("张先生的女儿？"))
+
+    def test_unrelated_question_does_not_use_relation_expansion(self):
+        self.assertIsNone(utils.expand_relation_query("马王堆出土了多少件漆器？"))
+
     def test_rerank_error_fields_survive_trace_normalization(self):
         trace = normalize_rag_trace(
             {
@@ -170,6 +190,284 @@ class RagCoreCompatibilityTests(unittest.TestCase):
         self.assertEqual("MODEL_RATE_LIMITED", trace["rerank_error"])
         self.assertEqual("MODEL_RATE_LIMITED", trace["rerank_error_code"])
         self.assertTrue(trace["rerank_retryable"])
+
+    def test_local_rerank_promotes_exact_person_and_relationship_evidence(self):
+        docs = [
+            {"filename": "辛追遗体.docx", "text": "辛追夫人的遗体保存与保护研究。", "score": 0.9},
+            {"filename": "妾辛追印.docx", "text": "辛追墓出土了妾辛追印。", "score": 0.8},
+            {
+                "filename": "03_利苍一家与西汉长沙国背景.docx",
+                "text": "辛追夫人与利苍的儿子利豨继承了父亲的爵位。",
+                "score": 0.5,
+            },
+        ]
+
+        reranked = utils._local_lexical_rerank("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertEqual("03_利苍一家与西汉长沙国背景.docx", reranked[0]["filename"])
+        self.assertGreater(reranked[0]["local_rerank_score"], reranked[1]["local_rerank_score"])
+
+    def test_relationship_target_outweighs_repeated_broad_subject(self):
+        docs = [
+            {
+                "filename": "辛追夫人与遗体保护边界.docx",
+                "text": "辛追夫人的遗体保护和数字化研究。",
+                "score": 0.9,
+            },
+            {
+                "filename": "03_利苍一家与西汉长沙国背景.docx",
+                "text": "利苍一家三口包括辛追和利豨。",
+                "score": 0.5,
+            },
+        ]
+
+        reranked = utils._local_lexical_rerank("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertEqual("03_利苍一家与西汉长沙国背景.docx", reranked[0]["filename"])
+        self.assertEqual({"利豨"}, utils._query_focus_terms("辛追夫人的儿子利豨"))
+
+    def test_general_question_keeps_rrf_order(self):
+        docs = [
+            {"filename": "常见问答.docx", "text": "马王堆出土文物概览。", "score": 0.9},
+            {"filename": "漆器与髹漆工艺.docx", "text": "马王堆出土七百余件漆器。", "score": 0.8},
+        ]
+
+        reranked = utils._local_lexical_rerank("马王堆出土了多少件漆器？", docs)
+
+        self.assertEqual(["常见问答.docx", "漆器与髹漆工艺.docx"], [d["filename"] for d in reranked])
+        self.assertEqual(set(), utils._query_focus_terms("辛追夫人的儿子是谁？"))
+
+    def test_focus_protection_runs_after_semantic_ranking(self):
+        docs = [
+            {"filename": "辛追遗体.docx", "text": "辛追遗体保护"},
+            {"filename": "利苍一家.docx", "text": "辛追和利豨属于利苍一家"},
+            {"filename": "数字研究.docx", "text": "辛追数字人"},
+        ]
+
+        ranked = utils._promote_focus_matches("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertEqual("利苍一家.docx", ranked[0]["filename"])
+        self.assertEqual(
+            [item["filename"] for item in docs],
+            [item["filename"] for item in utils._promote_focus_matches("辛追遗体如何保护", docs)],
+        )
+
+    def test_person_profile_intent_prefers_family_evidence_over_object_mentions(self):
+        docs = [
+            {
+                "filename": "竽与古代音乐器物.docx",
+                "text": "利豨墓出土了一件结构完整的实用竽。",
+            },
+            {
+                "filename": "利苍一家与西汉长沙国背景.docx",
+                "text": "辛追夫人与利苍的儿子利豨继承爵位，是三号墓墓主人。",
+            },
+        ]
+
+        ranked, changed = utils._promote_intent_matches("介绍一下辛追夫人的儿子利豨", docs)
+
+        self.assertTrue(changed)
+        self.assertEqual("利苍一家与西汉长沙国背景.docx", ranked[0]["filename"])
+
+    def test_relation_question_retries_once_after_empty_retrieval(self):
+        docs = [{"filename": "人物关系.docx", "page_number": 1, "text": "某人的女儿名叫小雨。"}]
+
+        class FakeGrader:
+            def with_structured_output(self, _schema, **_kwargs):
+                return self
+
+            def invoke(self, _messages):
+                return pipeline.EvidenceGrade(
+                    relevance="strong",
+                    answerability="sufficient",
+                    ambiguity="none",
+                    route="answer",
+                    confidence=0.9,
+                )
+
+        retrievals = [
+            {"docs": [], "meta": {}},
+            {"docs": docs, "meta": {}},
+        ]
+        with (
+            patch.object(pipeline, "retrieve_documents", side_effect=retrievals) as retrieve,
+            patch.object(pipeline, "_get_grader_model", return_value=FakeGrader()),
+        ):
+            result = pipeline.run_rag_graph("介绍一下某人的女儿")
+
+        self.assertEqual("answerable", result["retrieval_status"])
+        self.assertEqual(2, retrieve.call_count)
+        self.assertEqual("relation_expansion", result["rag_trace"]["rewrite_method"])
+        self.assertIn("人物姓名 身份 家庭关系", retrieve.call_args_list[1].args[0])
+
+    def test_relation_question_retries_when_initial_chunks_cannot_answer(self):
+        weak_docs = [{"filename": "遗体保护.docx", "page_number": 1, "text": "墓主人遗体保护。"}]
+        useful_docs = [{"filename": "人物关系.docx", "page_number": 1, "text": "某人的女儿名叫小雨。"}]
+
+        class SequencedGrader:
+            def __init__(self):
+                self.calls = 0
+
+            def with_structured_output(self, _schema, **_kwargs):
+                return self
+
+            def invoke(self, _messages):
+                self.calls += 1
+                if self.calls == 1:
+                    return pipeline.EvidenceGrade(
+                        relevance="weak",
+                        answerability="none",
+                        ambiguity="none",
+                        route="no_knowledge",
+                        confidence=0.9,
+                    )
+                return pipeline.EvidenceGrade(
+                    relevance="strong",
+                    answerability="sufficient",
+                    ambiguity="none",
+                    route="answer",
+                    confidence=0.9,
+                )
+
+        with (
+            patch.object(
+                pipeline,
+                "retrieve_documents",
+                side_effect=[{"docs": weak_docs, "meta": {}}, {"docs": useful_docs, "meta": {}}],
+            ) as retrieve,
+            patch.object(pipeline, "_get_grader_model", return_value=SequencedGrader()),
+        ):
+            result = pipeline.run_rag_graph("介绍一下某人的女儿")
+
+        self.assertEqual("answerable", result["retrieval_status"])
+        self.assertEqual(2, retrieve.call_count)
+        self.assertEqual("relation_expansion", result["rag_trace"]["rewrite_method"])
+
+    def test_relation_question_returns_partial_evidence_after_retry(self):
+        grade = pipeline.EvidenceGrade(
+            relevance="weak",
+            answerability="partial",
+            ambiguity="none",
+            route="rewrite",
+            confidence=0.7,
+        )
+        route = pipeline._resolve_route(
+            grade,
+            {
+                "question": "介绍一下某人的女儿",
+                "docs": [{"filename": "人物关系.docx", "text": "一家三口相关资料"}],
+                "rewrite_count": 1,
+                "is_sub_agent": False,
+            },
+        )
+
+        self.assertEqual("answer", route)
+        self.assertEqual("partial", pipeline._retrieval_status_for_route(route, grade))
+
+    def test_document_diversity_prefers_other_sources_before_refill(self):
+        docs = [
+            {"filename": "A.docx", "text": "A1"},
+            {"filename": "A.docx", "text": "A2"},
+            {"filename": "A.docx", "text": "A3"},
+            {"filename": "B.docx", "text": "B1"},
+        ]
+
+        with patch.object(utils, "RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT", 2):
+            selected, changed = utils._prefer_document_diversity(docs, top_k=3)
+
+        self.assertEqual(["A1", "A2", "B1"], [item["text"] for item in selected])
+        self.assertTrue(changed)
+
+    def test_local_rerank_trace_survives_normalization(self):
+        trace = normalize_rag_trace(
+            {
+                "local_rerank_enabled": True,
+                "local_rerank_applied": True,
+                "rerank_backend": "local_cross_encoder",
+                "retrieval_max_chunks_per_document": 2,
+                "document_diversity_applied": True,
+            }
+        )
+
+        self.assertTrue(trace["local_rerank_applied"])
+        self.assertTrue(trace["document_diversity_applied"])
+        self.assertEqual(2, trace["retrieval_max_chunks_per_document"])
+        self.assertEqual("local_cross_encoder", trace["rerank_backend"])
+
+    def test_local_cross_encoder_reranks_and_records_backend(self):
+        class FakeCrossEncoder:
+            def predict(self, pairs, **_kwargs):
+                self.pairs = pairs
+                return [-2.0, 3.0]
+
+        docs = [
+            {"filename": "A.docx", "text": "泛化资料", "score": 0.9},
+            {"filename": "B.docx", "text": "精确资料", "score": 0.5},
+        ]
+        with (
+            patch.object(utils, "RERANK_MODEL", None),
+            patch.object(utils, "RERANK_API_KEY", None),
+            patch.object(utils, "RERANK_BINDING_HOST", None),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_MODEL", "local-test-model"),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_WEIGHT", 0.8),
+            patch.object(utils, "_get_local_cross_encoder", return_value=FakeCrossEncoder()),
+        ):
+            ranked, meta = utils._rerank_documents("精确问题", docs, top_k=2)
+
+        self.assertEqual("B.docx", ranked[0]["filename"])
+        self.assertEqual("local_cross_encoder", meta["rerank_backend"])
+        self.assertTrue(meta["rerank_applied"])
+        self.assertIsNone(meta["rerank_error"])
+
+    def test_cross_encoder_fusion_preserves_strong_rrf_evidence(self):
+        class FakeCrossEncoder:
+            def predict(self, _pairs, **_kwargs):
+                return [0.1, 0.9]
+
+        docs = [
+            {"filename": "exact-bm25.docx", "text": "四个单元", "score": 0.9, "rrf_rank": 1},
+            {"filename": "semantic.docx", "text": "展览内容", "score": 0.8, "rrf_rank": 2},
+        ]
+        with (
+            patch.object(utils, "LOCAL_CROSS_ENCODER_WEIGHT", 0.2),
+            patch.object(utils, "_get_local_cross_encoder", return_value=FakeCrossEncoder()),
+        ):
+            ranked = utils._rerank_with_local_cross_encoder("哪四个单元", docs)
+
+        self.assertEqual("exact-bm25.docx", ranked[0]["filename"])
+        self.assertIn("rerank_fused_score", ranked[0])
+
+    def test_local_cross_encoder_failure_falls_back_without_details(self):
+        docs = [{"filename": "A.docx", "text": "资料", "score": 0.9}]
+        with (
+            patch.object(utils, "RERANK_MODEL", None),
+            patch.object(utils, "RERANK_API_KEY", None),
+            patch.object(utils, "RERANK_BINDING_HOST", None),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_MODEL", "missing-model"),
+            patch.object(utils, "_get_local_cross_encoder", side_effect=RuntimeError("private path")),
+        ):
+            ranked, meta = utils._rerank_documents("问题", docs, top_k=1)
+
+        self.assertEqual("A.docx", ranked[0]["filename"])
+        self.assertEqual("LOCAL_RERANK_UNAVAILABLE", meta["rerank_error_code"])
+        self.assertNotIn("private path", str(meta))
+
+    def test_missing_external_reranker_uses_local_fallback(self):
+        docs = [
+            {"filename": "辛追遗体.docx", "text": "辛追遗体保护。", "score": 0.9},
+            {"filename": "利苍一家.docx", "text": "辛追的儿子利豨。", "score": 0.5},
+        ]
+
+        with (
+            patch.object(utils, "RERANK_ENABLED", False),
+            patch.object(utils, "LOCAL_CROSS_ENCODER_MODEL", None),
+            patch.object(utils, "LOCAL_LEXICAL_RERANK_ENABLED", True),
+        ):
+            ranked, meta = utils._rerank_documents("辛追的儿子利豨", docs, top_k=2)
+
+        self.assertEqual("利苍一家.docx", ranked[0]["filename"])
+        self.assertFalse(meta["rerank_applied"])
+        self.assertTrue(meta["local_rerank_applied"])
 
 
 if __name__ == "__main__":

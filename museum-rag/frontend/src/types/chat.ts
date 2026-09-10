@@ -3,7 +3,10 @@ export interface RetrievedChunk {
   page_number?: number;
   rrf_rank?: number;
   rerank_score?: number | null;
+  local_rerank_score?: number | null;
   text?: string;
+  source_kind?: 'knowledge_base' | 'official_web';
+  source_url?: string;
 }
 
 export interface RagTrace {
@@ -39,10 +42,27 @@ export interface RagTrace {
   auto_merge_steps?: number;
   rerank_enabled?: boolean | null;
   rerank_applied?: boolean | null;
+  rerank_backend?: string;
   rerank_model?: string;
   rerank_error?: string;
   rerank_error_code?: string;
   rerank_retryable?: boolean | null;
+  rerank_semantic_weight?: number | null;
+  local_rerank_enabled?: boolean | null;
+  local_rerank_applied?: boolean | null;
+  retrieval_max_chunks_per_document?: number;
+  document_diversity_applied?: boolean | null;
+  retrieval_boilerplate_stripped?: boolean | null;
+  official_web_enabled?: boolean | null;
+  official_web_attempted?: boolean | null;
+  official_web_status?: string;
+  official_web_error_code?: string;
+  official_web_evidence_count?: number;
+  official_web_extract_enabled?: boolean | null;
+  official_web_extract_status?: string;
+  official_web_extract_error_code?: string;
+  official_web_extract_evidence_count?: number;
+  official_web_extract_duration_ms?: number;
   coverage_gap_codes?: string[];
   coverage_gap_questions?: string[];
   expansion_type?: string;
@@ -57,6 +77,7 @@ export interface RagTrace {
   sub_traces?: any[];
   initial_retrieved_chunks?: RetrievedChunk[];
   expanded_retrieved_chunks?: RetrievedChunk[];
+  web_retrieved_chunks?: RetrievedChunk[];
 }
 
 export interface RagStep {
@@ -84,6 +105,7 @@ export interface Message {
   ragTrace?: RagTrace | null;
   ragSteps?: RagStep[];
   _groupedSteps?: GroupedRagStep[];
+  feedback?: import('./quality').AnswerFeedback | null;
 }
 
 export interface ChatSession {

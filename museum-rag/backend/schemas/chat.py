@@ -21,6 +21,9 @@ class RetrievedChunk(StrictSchema):
     score: Optional[float] = None
     rrf_rank: Optional[int] = None
     rerank_score: Optional[float] = None
+    local_rerank_score: Optional[float] = None
+    source_kind: Optional[Literal["knowledge_base", "official_web"]] = None
+    source_url: Optional[str] = None
 
 
 class RagTraceFields(StrictSchema):
@@ -39,9 +42,10 @@ class RagTraceFields(StrictSchema):
     hypothetical_doc: Optional[str] = None
 
     # 上游新版的等价字段，保留以便后续流程逐步迁移
-    rewrite_method: Optional[Literal["step_back", "hyde"]] = None
+    rewrite_method: Optional[Literal["relation_expansion", "step_back", "hyde"]] = None
     rewritten_query: Optional[str] = None
     hyde_document: Optional[str] = None
+    relation_candidates: Optional[List[str]] = None
 
     retrieval_stage: Optional[str] = None
     route: Optional[str] = None
@@ -74,6 +78,7 @@ class RagTraceFields(StrictSchema):
 
     rerank_enabled: Optional[bool] = None
     rerank_applied: Optional[bool] = None
+    rerank_backend: Optional[str] = None
     rerank_model: Optional[str] = None
     rerank_endpoint: Optional[str] = None
     rerank_error: Optional[str] = None
@@ -81,6 +86,24 @@ class RagTraceFields(StrictSchema):
     rerank_retryable: Optional[bool] = None
     rerank_timeout_seconds: Optional[float] = None
     rerank_min_score: Optional[float] = None
+    rerank_semantic_weight: Optional[float] = None
+    local_rerank_enabled: Optional[bool] = None
+    local_rerank_applied: Optional[bool] = None
+    retrieval_max_chunks_per_document: Optional[int] = None
+    document_diversity_applied: Optional[bool] = None
+    query_intent: Optional[str] = None
+    intent_rerank_applied: Optional[bool] = None
+    official_web_enabled: Optional[bool] = None
+    official_web_attempted: Optional[bool] = None
+    official_web_status: Optional[str] = None
+    official_web_error_code: Optional[str] = None
+    official_web_evidence_count: Optional[int] = None
+    official_web_extract_enabled: Optional[bool] = None
+    official_web_extract_status: Optional[str] = None
+    official_web_extract_error_code: Optional[str] = None
+    official_web_extract_evidence_count: Optional[int] = None
+    official_web_extract_duration_ms: Optional[int] = None
+    retrieval_boilerplate_stripped: Optional[bool] = None
     post_rerank_count: Optional[int] = None
     post_threshold_count: Optional[int] = None
     retrieval_empty: Optional[bool] = None
@@ -110,6 +133,7 @@ class RagTraceFields(StrictSchema):
     expanded_retrieved_chunks: Optional[List[RetrievedChunk]] = None
     rewrite_retrieved_chunks: Optional[List[RetrievedChunk]] = None
     hitl_targeted_retrieved_chunks: Optional[List[RetrievedChunk]] = None
+    web_retrieved_chunks: Optional[List[RetrievedChunk]] = None
 
     complexity: Optional[str] = None
     complexity_reason: Optional[str] = None
@@ -184,10 +208,11 @@ def _normalize_trace_fields(trace: dict, fields: dict) -> dict:
         "expanded_retrieved_chunks",
         "rewrite_retrieved_chunks",
         "hitl_targeted_retrieved_chunks",
+        "web_retrieved_chunks",
     ):
         if key in normalized:
             normalized[key] = _normalize_chunks(normalized[key])
-    if normalized.get("rewrite_method") not in (None, "step_back", "hyde"):
+    if normalized.get("rewrite_method") not in (None, "relation_expansion", "step_back", "hyde"):
         normalized.pop("rewrite_method", None)
     return normalized
 
@@ -235,6 +260,7 @@ class MessageInfo(StrictSchema):
     content: str
     timestamp: str
     rag_trace: Optional[RagTrace] = None
+    feedback: Optional[dict] = None
 
 
 class SessionMessagesResponse(StrictSchema):
