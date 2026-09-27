@@ -20,6 +20,8 @@ class ChatRequestContext:
     session_id: str
     output_queue: Optional[asyncio.Queue] = None
     loop: Optional[asyncio.AbstractEventLoop] = None
+    audience: Optional[str] = None
+    exhibit_id: Optional[str] = None
 
     _lock: threading.RLock = field(default_factory=threading.RLock)
     _active: bool = True

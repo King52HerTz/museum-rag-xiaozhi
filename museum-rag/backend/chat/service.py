@@ -7,6 +7,7 @@ from uuid import uuid4
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, SystemMessage
 
 from backend.chat.request_context import ChatRequestContext
+from backend.chat.audience import audience_prompt
 from backend.chat.runtime import create_agent_for_request, fast_model, model
 from backend.chat.storage import ConversationStorage
 from backend.chat.rag_context import get_last_rag_context
@@ -176,6 +177,7 @@ def _build_resume_answer_messages(
     pending_hitl: dict,
     user_answer: str,
     docs: list[dict],
+    ctx: ChatRequestContext | None = None,
 ) -> list:
     original_question = pending_hitl.get("original_question") or ""
     prompt = pending_hitl.get("prompt") or ""
@@ -187,6 +189,7 @@ def _build_resume_answer_messages(
             "You MUST cite source chunks inline with [1], [2], etc. "
             "If the chunks are insufficient, say so honestly. "
             "Do not mention internal HITL or RAG implementation details."
+            + (audience_prompt(ctx.audience, ctx.exhibit_id) if ctx else "")
         )
     )
     human = HumanMessage(
@@ -218,14 +221,15 @@ def _resume_rag_from_hitl_sync(pending_hitl: dict, user_answer: str, ctx: ChatRe
     return resume_rag_from_hitl(resume_state, user_answer, ctx)
 
 
-def _answer_resumed_rag_sync(pending_hitl: dict, user_answer: str, rag_result: dict) -> str:
+def _answer_resumed_rag_sync(pending_hitl: dict, user_answer: str, rag_result: dict,
+                           ctx: ChatRequestContext | None = None) -> str:
     docs = rag_result.get("docs") or []
     trace = rag_result.get("rag_trace") or {}
     status = rag_result.get("retrieval_status") or trace.get("retrieval_status")
     route = rag_result.get("route") or trace.get("route")
     if status == "no_knowledge" or route == "no_knowledge" or not docs:
         return _no_knowledge_response()
-    res = model.invoke(_build_resume_answer_messages(pending_hitl, user_answer, docs))
+    res = model.invoke(_build_resume_answer_messages(pending_hitl, user_answer, docs, ctx))
     return _extract_ai_content(res)
 
 
@@ -346,6 +350,8 @@ def chat_with_agent(
     )
 
     ctx = ChatRequestContext.for_sync(user_id=user_id, session_id=session_id)
+    ctx.audience = metadata.get("audience")
+    ctx.exhibit_id = metadata.get("exhibit_id")
     ctx.reset_knowledge_tool_budget()
 
     try:
@@ -370,7 +376,7 @@ def chat_with_agent(
                     next_pending_hitl["options"],
                 )
             else:
-                response_content = _answer_resumed_rag_sync(pending_hitl, user_text, rag_result)
+                response_content = _answer_resumed_rag_sync(pending_hitl, user_text, rag_result, ctx)
         else:
             request_agent = create_agent_for_request(ctx)
             context_messages = _build_context_messages(messages[:-1], persistent_note, effective_user_text)
@@ -492,6 +498,8 @@ async def chat_with_agent_stream(
         session_id=session_id,
         output_queue=output_queue,
     )
+    ctx.audience = metadata.get("audience")
+    ctx.exhibit_id = metadata.get("exhibit_id")
     ctx.reset_knowledge_tool_budget()
 
     try:
@@ -542,6 +550,7 @@ async def chat_with_agent_stream(
                     pending_hitl,
                     user_text,
                     rag_result.get("docs") or [],
+                    ctx,
                 )
                 async for msg in model.astream(answer_messages):
                     content = _extract_ai_content(msg)
