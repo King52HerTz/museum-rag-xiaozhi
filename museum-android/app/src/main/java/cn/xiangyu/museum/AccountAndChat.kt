@@ -1,9 +1,16 @@
 package cn.xiangyu.museum
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -13,25 +20,68 @@ fun AccountContent(state: MuseumState, onSubmit: (String, String, String, Boolea
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var endpoint by remember(state.endpoint) { mutableStateOf(state.endpoint) }
+    var connectionSettings by remember(state.endpoint) { mutableStateOf(state.endpoint.isBlank()) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Space.medium)) {
-        Text("把你的文物旅行记，留在自己的手帐里", style = MaterialTheme.typography.headlineLarge)
-        Text("请由成人协助注册，不需要填写姓名、年龄或学校。", style = MaterialTheme.typography.bodyMedium)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("湘遇", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
+            Text("文物旅行记 / 第一页", style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Space.small)) {
+                Text("翻开你的\n文物旅行记", style = MaterialTheme.typography.headlineLarge)
+                Text("和阿帛一起，\n发现两千年前的生活。", style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Image(painterResource(R.drawable.abo), contentDescription = "阿帛挥手邀请你开始旅行",
+                modifier = Modifier.weight(0.8f).height(Space.touch * 3))
+        }
         if (state.restoring) {
             CircularProgressIndicator()
             Text("正在恢复登录")
         } else {
-            MuseumField(username, { username = it }, "账号", enabled = !state.authBusy)
-            MuseumField(password, { password = it }, "密码", password = true, enabled = !state.authBusy)
-            MuseumField(endpoint, { endpoint = it }, "服务地址", enabled = !state.authBusy)
-            Text(if (BuildConfig.DEBUG) "调试版：模拟器使用 10.0.2.2 访问电脑；真机填写可达的服务地址。HTTP 仅用于可信开发网络。"
-                else "请使用 HTTPS 服务地址。", style = MaterialTheme.typography.bodySmall)
-            state.error?.let { MuseumNotice(it, error = true) }
-            MuseumButton(onClick = { onSubmit(endpoint, username, password, register); password = "" },
-                enabled = !state.authBusy && username.isNotBlank() && password.isNotBlank()) {
-                Text(if (state.authBusy) "正在连接…" else if (register) "注册并开始旅行" else "登录并开始旅行")
+            Surface(shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(Space.small / 8, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))) {
+                Column(Modifier.padding(Space.large), verticalArrangement = Arrangement.spacedBy(Space.medium)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.small)) {
+                        listOf(false to "登录", true to "注册").forEach { (value, label) ->
+                            TextButton(onClick = { register = value; password = "" }, enabled = !state.authBusy,
+                                modifier = Modifier.weight(1f).heightIn(min = Space.touch)
+                                    .semantics { selected = register == value },
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = if (register == value) MaterialTheme.colorScheme.surfaceVariant
+                                        else androidx.compose.ui.graphics.Color.Transparent)) { Text(label) }
+                        }
+                    }
+                    Text(if (register) "领取一本属于你的手帐" else "欢迎回到你的旅行手帐",
+                        style = MaterialTheme.typography.titleMedium)
+                    MuseumField(username, { username = it }, "账号", enabled = !state.authBusy)
+                    MuseumField(password, { password = it }, "密码", password = true, enabled = !state.authBusy)
+                    state.error?.let { MuseumNotice(it, error = true) }
+                    MuseumButton(onClick = { onSubmit(endpoint, username, password, register); password = "" },
+                        enabled = !state.authBusy && username.isNotBlank() && password.isNotBlank()) {
+                        if (state.authBusy) {
+                            CircularProgressIndicator(Modifier.size(Space.large), strokeWidth = Space.small / 4)
+                            Spacer(Modifier.width(Space.small))
+                        }
+                        Text(if (state.authBusy) "正在连接…" else if (register) "注册并开始旅行" else "登录并开始旅行")
+                    }
+                    Text("阅读故事 · 问阿帛 · 留下你的发现", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            TextButton(onClick = { register = !register; password = "" }, enabled = !state.authBusy) {
-                Text(if (register) "已有账号，去登录" else "没有账号，去注册")
+            Text("小朋友请由成人协助注册。无需填写真实姓名、年龄或学校。",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = { connectionSettings = !connectionSettings }, enabled = !state.authBusy,
+                modifier = Modifier.semantics { stateDescription = if (connectionSettings) "已展开" else "已收起" }) {
+                Text(if (connectionSettings) "收起连接设置" else "连接设置")
+            }
+            if (connectionSettings) {
+                MuseumField(endpoint, { endpoint = it }, "服务地址", enabled = !state.authBusy)
+                Text(if (BuildConfig.DEBUG) "模拟器使用 10.0.2.2 访问电脑；真机填写可达的服务地址。HTTP 仅用于可信开发网络。"
+                    else "请使用 HTTPS 服务地址。", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

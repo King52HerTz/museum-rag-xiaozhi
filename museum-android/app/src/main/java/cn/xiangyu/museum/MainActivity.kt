@@ -90,9 +90,8 @@ private fun MuseumPages(state: MuseumState, controller: MuseumController?, modif
         Column(modifier = Modifier.padding(padding).fillMaxSize()
             .verticalScroll(rememberScrollState()).padding(Space.large),
             verticalArrangement = Arrangement.spacedBy(Space.medium)) {
-            Text("湘遇 · 文物旅行记", style = MaterialTheme.typography.titleLarge)
+            if (state.username != null) Text("湘遇 · 文物旅行记", style = MaterialTheme.typography.titleLarge)
             if (state.username == null) {
-                Abo(Modifier.height(Space.touch * 2))
                 AccountContent(state, { endpoint, username, password, register ->
                     controller?.authenticate(endpoint, username, password, register)
                 })

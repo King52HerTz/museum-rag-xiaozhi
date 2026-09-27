@@ -1,10 +1,21 @@
 package cn.xiangyu.museum
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
@@ -13,19 +24,39 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun MuseumButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
                  content: @Composable RowScope.() -> Unit) {
-    Button(onClick = onClick, modifier = modifier.fillMaxWidth().heightIn(min = Space.touch), enabled = enabled,
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSecondary), content = content)
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val sheet = ImageBitmap.imageResource(R.drawable.button_sprites)
+    val row = if (!enabled) 2 else if (pressed) 1 else 0
+    val painter = remember(sheet, row) {
+        BitmapPainter(sheet, srcOffset = IntOffset(24, row * (sheet.height / 3)),
+            srcSize = IntSize(sheet.width - 48, sheet.height / 3))
+    }
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Image(painter, contentDescription = null, modifier = Modifier.matchParentSize(), contentScale = ContentScale.FillBounds)
+        Button(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = Space.touch), enabled = enabled,
+            interactionSource = interaction,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSecondary,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant), content = content)
+    }
 }
 
 @Composable
 fun MuseumField(value: String, onValueChange: (String) -> Unit, label: String,
                 modifier: Modifier = Modifier, enabled: Boolean = true, password: Boolean = false,
                 singleLine: Boolean = true) {
+    var passwordVisible by remember { mutableStateOf(false) }
     OutlinedTextField(value, onValueChange, modifier = modifier.fillMaxWidth(), enabled = enabled,
         label = { Text(label) }, singleLine = singleLine, maxLines = if (singleLine) 1 else 5,
+        shape = MaterialTheme.shapes.large,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+        trailingIcon = if (password) { { TextButton(onClick = { passwordVisible = !passwordVisible }, enabled = enabled) {
+            Text(if (passwordVisible) "隐藏" else "显示", style = MaterialTheme.typography.labelMedium)
+        } } } else null,
         keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else KeyboardType.Text),
-        visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None)
+        visualTransformation = if (password && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None)
 }
 
 @Composable

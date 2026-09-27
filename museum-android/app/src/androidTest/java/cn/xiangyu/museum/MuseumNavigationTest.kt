@@ -73,6 +73,23 @@ class MuseumNavigationTest {
         compose.onNodeWithText("已登录 · TEST_UI_USER").assertExists()
     }
 
+    @Test fun registrationTabsClearPasswordAndConnectionSettingsExpand() {
+        compose.runOnUiThread { ViewModelProvider(compose.activity)[MuseumViewModel::class.java].controller.logout() }
+        compose.onNodeWithText("登录并开始旅行").assertIsNotEnabled()
+        compose.onNode(hasSetTextAction() and hasText("服务地址")).assertDoesNotExist()
+        compose.onNode(hasSetTextAction() and hasText("密码")).performScrollTo().performTextInput("TEST_ONLY_PASSWORD")
+        compose.onNodeWithText("显示").performClick()
+        compose.onNodeWithText("隐藏").assertExists()
+        compose.onNodeWithText("注册", substring = false).performScrollTo().performClick().assertIsSelected()
+        compose.onNodeWithText("注册并开始旅行").assertIsNotEnabled()
+        compose.onNodeWithText("连接设置").performScrollTo().performClick()
+        compose.onNode(hasSetTextAction() and hasText("服务地址")).assertExists()
+        compose.onNodeWithText("收起连接设置").performScrollTo().performClick()
+        compose.onNode(hasSetTextAction() and hasText("服务地址")).assertDoesNotExist()
+        compose.onNodeWithText("登录", substring = false).performScrollTo().performClick().assertIsSelected()
+        compose.onNodeWithText("登录并开始旅行").assertIsNotEnabled()
+    }
+
     @Test fun chatShowsStreamReferencesAndClarificationWithoutResendingOnRecreate() {
         compose.onNodeWithText("儿童模式").performScrollTo().performClick()
         compose.onNode(hasText("问阿帛") and hasClickAction()).performClick()
