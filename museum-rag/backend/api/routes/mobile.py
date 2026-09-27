@@ -5,13 +5,46 @@ from sqlalchemy.orm import Session
 
 from backend.api.routes import auth, chat, sessions
 from backend.chat import storage
-from backend.db.models import ChatSession, User
+from backend.db.models import ChatSession, MobileTaskCompletion, User
 from backend.infra.auth import get_current_user, get_db
 from backend.infra.cache import cache
 from backend.schemas import AuthResponse, ChatRequest, ChatResponse, RegisterRequest, SessionInfo, SessionListResponse
 from backend.schemas.mobile import Audience, MobileChatRequest, MobileRegisterRequest, MobileSessionRequest
+from backend.schemas.mobile import MobileProgressRequest, MobileProgressResponse
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
+
+TASK_IDS = {"clothes-light-v1", "clothes-pattern-v1"}
+
+
+def _progress(db: Session, user: User, audience: Audience):
+    tasks = {row.task_id for row in db.query(MobileTaskCompletion).filter_by(
+        user_id=user.id, audience=audience).all()} & TASK_IDS
+    return MobileProgressResponse(audience=audience, completed_tasks=sorted(tasks),
+                                  rewards=["clothes-journal-v1"] if tasks == TASK_IDS else [])
+
+
+@router.get("/progress", response_model=MobileProgressResponse)
+async def get_progress(audience: Audience, current_user: User = Depends(get_current_user),
+                       db: Session = Depends(get_db)):
+    return _progress(db, current_user, audience)
+
+
+@router.post("/progress/sync", response_model=MobileProgressResponse)
+async def sync_progress(request: MobileProgressRequest,
+                        current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # The unique key makes overlapping retries safe; completion is a grow-only set.
+    if db.get_bind().dialect.name == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert
+    for task_id in set(request.completed_tasks):
+        statement = insert(MobileTaskCompletion).values(
+            user_id=current_user.id, audience=request.audience, task_id=task_id
+        ).on_conflict_do_nothing(index_elements=["user_id", "audience", "task_id"])
+        db.execute(statement)
+    db.commit()
+    return _progress(db, current_user, request.audience)
 
 
 def _owned_session(db: Session, user: User, session_id: str, audience: Audience):

@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from backend.api.routes import mobile
 from backend.chat.audience import audience_prompt
 from backend.chat.storage import ConversationStorage
-from backend.db.models import ChatSession, User
+from backend.db.models import ChatSession, MobileTaskCompletion, User
 from backend.infra.auth import get_current_user, get_db
 from backend.infra.database import Base
 
@@ -51,6 +51,45 @@ class MobileApiTests(unittest.TestCase):
         response = self.client.post("/mobile/sessions", json={"audience": audience, "exhibit_id": exhibit_id})
         self.assertEqual(200, response.status_code)
         return response.json()["session_id"]
+
+    def test_progress_merges_only_forward_and_reward_is_idempotent(self):
+        path = "/mobile/progress/sync"
+        first = self.client.post(path, json={"audience": "child", "completed_tasks": ["clothes-light-v1"]})
+        self.assertEqual(200, first.status_code)
+        self.assertEqual([], first.json()["rewards"])
+        payload = {"audience": "child", "completed_tasks": ["clothes-pattern-v1", "clothes-light-v1"]}
+        for _ in range(3):
+            response = self.client.post(path, json=payload)
+            self.assertEqual(["clothes-journal-v1"], response.json()["rewards"])
+        self.assertEqual(2, self.db.query(MobileTaskCompletion).count())
+        stale = self.client.post(path, json={"audience": "child", "completed_tasks": []})
+        self.assertEqual(2, len(stale.json()["completed_tasks"]))
+        self.assertEqual(response.json(), self.client.get("/mobile/progress?audience=child").json())
+
+    def test_progress_account_and_mode_isolation(self):
+        self.client.post("/mobile/progress/sync", json={"audience": "child", "completed_tasks": ["clothes-light-v1"]})
+        self.assertEqual([], self.client.get("/mobile/progress?audience=adult").json()["completed_tasks"])
+        self.user = self.users[1]
+        self.assertEqual([], self.client.get("/mobile/progress?audience=child").json()["completed_tasks"])
+        self.client.post("/mobile/progress/sync", json={"audience": "adult", "completed_tasks": ["clothes-pattern-v1"]})
+        self.user = self.users[0]
+        self.assertEqual(["clothes-light-v1"], self.client.get("/mobile/progress?audience=child").json()["completed_tasks"])
+        self.assertEqual([], self.client.get("/mobile/progress?audience=adult").json()["completed_tasks"])
+
+    def test_progress_rejects_unknown_tasks_mode_and_user_fields(self):
+        for payload in (
+            {"audience": "child", "completed_tasks": ["unknown"]},
+            {"audience": "legacy", "completed_tasks": []},
+            {"audience": "child", "completed_tasks": [], "user_id": self.users[1].id},
+            {"audience": "child", "completed_tasks": [], "rewards": ["anything"]},
+        ):
+            self.assertEqual(422, self.client.post("/mobile/progress/sync", json=payload).status_code)
+        self.assertEqual(0, self.db.query(MobileTaskCompletion).count())
+        app = FastAPI()
+        app.include_router(mobile.router)
+        with TestClient(app) as client:
+            self.assertEqual(401, client.get("/mobile/progress?audience=child").status_code)
+            self.assertEqual(401, client.post("/mobile/progress/sync", json={"audience": "child", "completed_tasks": []}).status_code)
 
     def test_create_and_list_separates_modes_and_users(self):
         child = self.create("child", "silk-plain-straight")

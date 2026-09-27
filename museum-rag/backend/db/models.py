@@ -16,6 +16,16 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
+    mobile_tasks = relationship("MobileTaskCompletion", cascade="all, delete-orphan")
+
+
+class MobileTaskCompletion(Base):
+    __tablename__ = "mobile_task_completions"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    audience: Mapped[str] = mapped_column(String(10), primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    completed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class ChatSession(Base):
