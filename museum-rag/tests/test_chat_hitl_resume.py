@@ -91,6 +91,39 @@ async def _collect_stream(*args, **kwargs):
 
 
 class ChatHitlResumeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_stream_done_guarantees_saved_history_when_client_closes(self):
+        fake_storage = FakeStorage()
+        with (
+            patch.object(service, "storage", fake_storage),
+            patch.object(service, "create_agent_for_request", lambda ctx: FakeStreamAgent(ctx, chunks=["回答"])),
+            patch.object(service, "generate_session_title", return_value="问题"),
+        ):
+            stream = service.chat_with_agent_stream("介绍文物", "u", "s")
+            try:
+                async for chunk in stream:
+                    if chunk.strip() == "data: [DONE]":
+                        self.assertEqual("回答", fake_storage.messages[-1].content)
+                        self.assertEqual("回答", fake_storage.saves[-1]["messages"][-1].content)
+                        break
+                else:
+                    self.fail("completion event missing")
+            finally:
+                await stream.aclose()
+
+    async def test_stream_save_failure_never_reports_done(self):
+        fake_storage = FakeStorage()
+        fake_storage.save = Mock(side_effect=RuntimeError("test storage unavailable"))
+        chunks = []
+        with (
+            patch.object(service, "storage", fake_storage),
+            patch.object(service, "create_agent_for_request", lambda ctx: FakeStreamAgent(ctx, chunks=["回答"])),
+            patch.object(service, "generate_session_title", return_value="问题"),
+        ):
+            with self.assertRaises(RuntimeError):
+                async for chunk in service.chat_with_agent_stream("介绍文物", "u", "s"):
+                    chunks.append(chunk)
+        self.assertNotIn("data: [DONE]\n\n", chunks)
+
     def test_sync_normal_answer_preserves_response_and_skips_short_note(self):
         fake_storage = FakeStorage()
 
@@ -330,7 +363,17 @@ class ChatHitlResumeTests(unittest.IsolatedAsyncioTestCase):
             patch.object(service, "model", fake_model),
             patch.object(service, "update_persistent_note", AsyncMock(return_value="updated note")),
         ):
-            chunks = await _collect_stream("丹瑾", "u", "s")
+            chunks = []
+            stream = service.chat_with_agent_stream("丹瑾", "u", "s")
+            try:
+                async for chunk in stream:
+                    chunks.append(chunk)
+                    if chunk.strip() == "data: [DONE]":
+                        self.assertEqual("丹瑾是湮灭属性。[1]", fake_storage.messages[-1].content)
+                        self.assertIsNone(fake_storage.metadata.get(service.PENDING_HITL_KEY))
+                        break
+            finally:
+                await stream.aclose()
 
         events = _parse_sse_events(chunks)
         self.assertEqual(["丹瑾是湮灭属性。[1]"], [

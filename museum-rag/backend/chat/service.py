@@ -564,8 +564,6 @@ async def chat_with_agent_stream(
             if next_pending_hitl:
                 yield f"data: {json.dumps({'type': 'hitl_request', 'hitl': _build_hitl_event(next_pending_hitl)})}\n\n"
 
-            yield "data: [DONE]\n\n"
-
             save_meta = dict(metadata)
             if invalid_pending_hitl:
                 save_meta[PENDING_HITL_KEY] = None
@@ -593,6 +591,7 @@ async def chat_with_agent_stream(
                 metadata=save_meta,
                 extra_message_data=extra_message_data,
             )
+            yield "data: [DONE]\n\n"
             return
 
         request_agent = create_agent_for_request(ctx)
@@ -698,8 +697,6 @@ async def chat_with_agent_stream(
         if next_pending_hitl:
             yield f"data: {json.dumps({'type': 'hitl_request', 'hitl': _build_hitl_event(next_pending_hitl)})}\n\n"
 
-        yield "data: [DONE]\n\n"
-
         save_meta = dict(metadata)
         if invalid_pending_hitl:
             save_meta[PENDING_HITL_KEY] = None
@@ -732,5 +729,6 @@ async def chat_with_agent_stream(
             metadata=save_meta,
             extra_message_data=extra_message_data,
         )
+        yield "data: [DONE]\n\n"
     finally:
         ctx.close()
