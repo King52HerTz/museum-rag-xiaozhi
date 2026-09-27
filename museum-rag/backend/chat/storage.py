@@ -154,6 +154,8 @@ class ConversationStorage:
                         "title": meta.get("title") or s.session_id,
                         "updated_at": s.updated_at.isoformat(),
                         "message_count": count,
+                        "audience": meta.get("audience"),
+                        "exhibit_id": meta.get("exhibit_id"),
                     }
                 )
             cache.set_json(self._sessions_cache_key(user_id), result)

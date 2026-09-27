@@ -269,6 +269,8 @@ class SessionMessagesResponse(StrictSchema):
 
 class SessionInfo(StrictSchema):
     session_id: str
+    audience: Optional[Literal["child", "adult"]] = None
+    exhibit_id: Optional[str] = None
     title: Optional[str] = None
     updated_at: str
     message_count: int

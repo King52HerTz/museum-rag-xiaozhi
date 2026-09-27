@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from backend.api.routes import auth, chat, documents, museum, quality, sessions
+from backend.api.routes import auth, chat, documents, mobile, museum, quality, sessions
 
 router = APIRouter()
 router.include_router(auth.router)
@@ -9,3 +9,4 @@ router.include_router(chat.router)
 router.include_router(documents.router)
 router.include_router(museum.router)
 router.include_router(quality.router)
+router.include_router(mobile.router)
