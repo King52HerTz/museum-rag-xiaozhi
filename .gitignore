@@ -12,6 +12,14 @@
 !UPSTREAM_MANIFEST.yaml
 !UPSTREAM_SYNC_POLICY.md
 
+# Native Android source; local configuration and output stay private.
+!/museum-android/
+!/museum-android/**
+**/local.properties
+**/*.jks
+**/*.keystore
+**/.kotlin/
+
 # Development records are kept together instead of cluttering the project root.
 !/docs/
 !/docs/development/
